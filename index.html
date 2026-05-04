@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏇 VocabRace PRO – SOL Edition (B2/C1)</title>
-    <!-- Libraries for Peer-to-Peer, QR, Excel and Word -->
+    <title>🏇 VocabRace PRO – Mastery Edition (B2/C1)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -32,7 +31,7 @@
         
         /* Race UI */
         .track { width: 100%; height: 500px; background: #2d7a1f; position: relative; border-radius: 15px; border: 5px solid #1e5215; overflow: hidden; margin-top: 20px; }
-        .horse { position: absolute; font-size: 3.2rem; transition: left 1s ease-out; display: flex; flex-direction: column; align-items: center; z-index: 50; }
+        .horse { position: absolute; font-size: 3.2rem; transition: left 1s ease-out; display: flex; flex-direction: column; align-items: center; z-index: 50; transform: scaleX(1); } /* Horse faces right toward Goal */
         .horse-label { font-size: 0.8rem; background: rgba(0,0,0,0.85); color: white; padding: 2px 8px; border-radius: 4px; margin-bottom: -5px; font-weight: bold; }
         .marker-line { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.15); border-left: 1px dashed rgba(255,255,255,0.2); }
         
@@ -41,16 +40,19 @@
 
         .solution-reveal { font-size: 2.8rem; color: var(--correct); font-weight: 900; margin-top: 10px; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 15px; border: 3px solid var(--correct); display: none; z-index: 100; position: relative; }
         #start-timer-text { font-size: 10rem; font-family: 'Boogaloo', cursive; color: var(--gold); position: absolute; z-index: 200; text-shadow: 0 0 40px black; }
+
+        /* Client specific styling */
+        #a-input { color: black !important; background: white !important; font-weight: bold; }
+        #res-val { font-size: 4rem; font-weight: 900; }
     </style>
 </head>
 <body>
 
-<!-- TEACHER: SETUP -->
 <div class="screen active" id="setup-screen">
     <div class="container">
-        <div class="game-title">🏇 VocabRace Setup</div>
+        <div class="game-title">🏇 VocabRace PRO</div>
         <div class="config-grid">
-            <div><label>Rounds</label><input type="number" id="cfg-rounds" value="10"></div>
+            <div><label>Rounds to Win</label><input type="number" id="cfg-rounds" value="10"></div>
             <div><label>Max Players</label><input type="number" id="cfg-players" value="30"></div>
             <div><label>Q-Timer (sec)</label><input type="number" id="cfg-q-timer" value="15"></div>
             <div><label>Sol-Timer (sec)</label><input type="number" id="cfg-s-timer" value="5"></div>
@@ -63,7 +65,6 @@
     </div>
 </div>
 
-<!-- TEACHER: LOBBY -->
 <div class="screen" id="lobby-screen">
     <div class="container">
         <div class="game-title">Lobby</div>
@@ -74,7 +75,6 @@
     </div>
 </div>
 
-<!-- TEACHER: RACE -->
 <div class="screen" id="race-screen">
     <div id="start-timer-text" style="display:none">10</div>
     <div style="text-align:center; width:100%; z-index:100;">
@@ -89,9 +89,31 @@
 
 <script>
 let peer, players = {}, vocab = [], currentIdx = 0, gameOn = false;
-let cfgRounds, cfgQTime, cfgSTime, cfgMaxP, timer, currentAnswer = "";
+let cfgRounds, cfgQTime, cfgSTime, cfgMaxP, timer, currentAnswer = "", firstCorrectInRound = false;
 
-// 1. FILE PROCESSING (CSV, Excel, Word)
+// 1. IMPROVED MOTIVATING AUDIO (Procedural gallop beat)
+let audioCtx;
+function playTheme() {
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const playN = (f, t, d, v=0.08) => {
+        const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+        o.type = 'sawtooth'; o.frequency.setValueAtTime(f, t);
+        g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t); o.stop(t + d);
+    };
+    setInterval(() => {
+        if(!gameOn) return;
+        const now = audioCtx.currentTime;
+        // Motivating rhythmic gallop beat
+        playN(80, now, 0.1, 0.15); // Bass kick
+        playN(110, now + 0.2, 0.15, 0.1);
+        playN(164, now + 0.4, 0.2, 0.08);
+        playN(220, now + 0.5, 0.1, 0.05);
+    }, 600);
+}
+
+// 2. FILE PROCESSING
 async function handleFileUpload(input) {
     const file = input.files[0];
     if (!file) return;
@@ -132,24 +154,6 @@ function parseText(text) {
         document.getElementById('status-text').innerText = `✅ ${vocab.length} Words Loaded`;
         document.getElementById('btn-lobby').disabled = false;
     }
-}
-
-// 2. AUDIO (Galloping Rhythm)
-let audioCtx;
-function playTheme() {
-    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const playN = (f, t, d, v=0.06) => {
-        const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
-        o.type = 'sawtooth'; o.frequency.setValueAtTime(f, t);
-        g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
-        o.connect(g); g.connect(audioCtx.destination);
-        o.start(t); o.stop(t + d);
-    };
-    setInterval(() => {
-        if(!gameOn) return;
-        const now = audioCtx.currentTime;
-        playN(110, now, 0.2, 0.1); playN(164, now + 0.2, 0.1, 0.05);
-    }, 600);
 }
 
 // 3. LOBBY & RACE LOGIC
@@ -204,8 +208,10 @@ function startRace() {
 }
 
 function runRound() {
+    // Intelligent recycling for difficult words
     if(currentIdx >= vocab.length) { vocab = vocab.sort((a,b) => b.err - a.err); currentIdx = 0; }
     document.getElementById('sol-box').style.display = "none";
+    firstCorrectInRound = false; // Reset for the round
     let isEn = Math.random() < 0.5;
     currentAnswer = isEn ? vocab[currentIdx].de : vocab[currentIdx].en;
     let q = "Translate: " + (isEn ? vocab[currentIdx].en : vocab[currentIdx].de);
@@ -222,7 +228,13 @@ function runRound() {
 function checkAnswer(id, val) {
     if(!gameOn || document.getElementById('sol-box').style.display === "block") return;
     if(val.toLowerCase().trim() === currentAnswer.toLowerCase().trim()) {
-        vocab[currentIdx].hits++; players[id].score++; players[id].last = 1;
+        vocab[currentIdx].hits++;
+        let points = 1;
+        if(!firstCorrectInRound) { points = 2; firstCorrectInRound = true; } // +2 for fastest person[cite: 2]
+        
+        players[id].score += points;
+        players[id].last = points;
+        
         if(players[id].score >= cfgRounds) endGame(players[id].name);
         reveal();
     } else { vocab[currentIdx].err++; players[id].last = -1; }
@@ -248,9 +260,9 @@ function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.cl
 const params = new URLSearchParams(window.location.search);
 if(params.has('join')) {
     document.body.innerHTML = `
-        <div class="screen active" id="c-tut"><div class="container"><h2>How to Play</h2><p>Translate as fast as possible. +1 point for correct, -1 for wrong. Watch the screen for the solution!</p><button class="btn btn-primary" onclick="showScreen('c-join')">OK</button></div></div>
+        <div class="screen active" id="c-tut"><div class="container"><h2>How to Play</h2><p>Translate as fast as possible. +2 points for being the fastest correct, +1 for correct. -1 for wrong. Watch the screen!</p><button class="btn btn-primary" onclick="showScreen('c-join')">OK</button></div></div>
         <div class="screen" id="c-join"><div class="container"><h2>Your Name</h2><input type="text" id="p-name"><button class="btn btn-primary" style="margin-top:20px;" onclick="doJoin()">Join</button></div></div>
-        <div class="screen" id="c-play"><div class="container"><h2 id="q-text">Waiting...</h2><input type="text" id="a-input"><button class="btn btn-primary" style="margin-top:20px;" id="btn-send" onclick="sendAns()">Submit</button><div id="fb-box" style="display:none; margin-top:20px;"><div id="fb-val" style="font-size:4rem; font-weight:900;"></div><p id="fb-sol"></p></div></div></div>`;
+        <div class="screen" id="c-play"><div class="container"><h2 id="q-text">Waiting...</h2><input type="text" id="a-input" style="color:black; background:white;"><button class="btn btn-primary" style="margin-top:20px;" id="btn-send" onclick="sendAns()">Submit</button><div id="fb-box" style="display:none; margin-top:20px;"><div id="fb-val" style="font-size:4rem; font-weight:900;"></div><p id="fb-sol"></p></div></div></div>`;
 }
 
 function doJoin() {
@@ -263,7 +275,8 @@ function doJoin() {
             if(d.type === 'go') showScreen('c-play');
             if(d.type === 'q') {
                 document.getElementById('q-text').innerText = d.text;
-                document.getElementById('a-input').disabled = false; document.getElementById('a-input').style.background = "white";
+                document.getElementById('a-input').disabled = false;
+                document.getElementById('a-input').style.background = "white";
                 document.getElementById('a-input').value = ""; document.getElementById('btn-send').style.display = "block";
                 document.getElementById('fb-box').style.display = "none";
             }
@@ -278,5 +291,7 @@ function doJoin() {
     });
 }
 </script>
+</body>
+</html>
 </body>
 </html>
