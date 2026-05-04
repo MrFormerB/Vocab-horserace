@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏇 VocabRace PRO – Mastery Edition</title>
+    <title>🏇 VocabRace PRO – SOL Edition (B2/C1)</title>
+    <!-- Libraries for Peer-to-Peer, QR, Excel and Word -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Boogaloo&family=Nunito:wght@400;700;900&display=swap');
         :root { --gold: #f5c518; --accent: #ff6b35; --dark: #1a1a2e; --white: #f8f9fa; --correct: #06d6a0; --wrong: #ef233c; }
@@ -28,47 +32,45 @@
         
         /* Race UI */
         .track { width: 100%; height: 500px; background: #2d7a1f; position: relative; border-radius: 15px; border: 5px solid #1e5215; overflow: hidden; margin-top: 20px; }
-        .horse { position: absolute; font-size: 3.2rem; transition: left 1s ease-out; display: flex; flex-direction: column; align-items: center; z-index: 50; transform: scaleX(1); }
+        .horse { position: absolute; font-size: 3.2rem; transition: left 1s ease-out; display: flex; flex-direction: column; align-items: center; z-index: 50; }
         .horse-label { font-size: 0.8rem; background: rgba(0,0,0,0.85); color: white; padding: 2px 8px; border-radius: 4px; margin-bottom: -5px; font-weight: bold; }
         .marker-line { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.15); border-left: 1px dashed rgba(255,255,255,0.2); }
         
-        /* Goal Area */
         .goal-checkered { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; background: repeating-conic-gradient(#fff 0% 25%, #000 0% 50%) 50% / 20px 20px; display: flex; align-items: center; justify-content: center; }
         .goal-label { background: var(--gold); color: black; font-family: 'Boogaloo', cursive; font-size: 1.5rem; padding: 5px 15px; border-radius: 5px; transform: rotate(-90deg); border: 2px solid black; font-weight: 900; }
 
         .solution-reveal { font-size: 2.8rem; color: var(--correct); font-weight: 900; margin-top: 10px; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 15px; border: 3px solid var(--correct); display: none; z-index: 100; position: relative; }
-        #start-timer-text { font-size: 10rem; font-family: 'Boogaloo', cursive; color: var(--gold); position: absolute; z-index: 200; text-shadow: 0 0 40px black; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        #start-timer-text { font-size: 10rem; font-family: 'Boogaloo', cursive; color: var(--gold); position: absolute; z-index: 200; text-shadow: 0 0 40px black; }
     </style>
 </head>
 <body>
 
-<!-- TEACHER: CONFIG -->
+<!-- TEACHER: SETUP -->
 <div class="screen active" id="setup-screen">
     <div class="container">
         <div class="game-title">🏇 VocabRace Setup</div>
         <div class="config-grid">
-            <div><label>Rounds (to win)</label><input type="number" id="cfg-rounds" value="10"></div>
+            <div><label>Rounds</label><input type="number" id="cfg-rounds" value="10"></div>
             <div><label>Max Players</label><input type="number" id="cfg-players" value="30"></div>
-            <div><label>Question Timer (sec)</label><input type="number" id="cfg-q-timer" value="15"></div>
-            <div><label>Solution Duration (sec)</label><input type="number" id="cfg-s-timer" value="5"></div>
+            <div><label>Q-Timer (sec)</label><input type="number" id="cfg-q-timer" value="15"></div>
+            <div><label>Sol-Timer (sec)</label><input type="number" id="cfg-s-timer" value="5"></div>
         </div>
-        <div class="upload-area" onclick="document.getElementById('csv-input').click()">
-            <div id="status-text">📁 Upload CSV Vocabulary</div>
-            <input type="file" id="csv-input" accept=".csv" style="display:none" onchange="loadCSV(this)">
+        <div class="upload-area" onclick="document.getElementById('file-input').click()">
+            <div id="status-text">📁 Upload CSV, Word (.docx) or Excel (.xlsx)</div>
+            <input type="file" id="file-input" accept=".csv, .xlsx, .docx" style="display:none" onchange="handleFileUpload(this)">
         </div>
-        <button class="btn btn-primary" id="btn-lobby" onclick="createLobby()" disabled>Upload CSV first</button>
+        <button class="btn btn-primary" id="btn-lobby" onclick="createLobby()" disabled>Upload Vocabulary first</button>
     </div>
 </div>
 
 <!-- TEACHER: LOBBY -->
 <div class="screen" id="lobby-screen">
     <div class="container">
-        <div class="game-title">Waiting Room</div>
+        <div class="game-title">Lobby</div>
         <div id="qr-container"></div>
         <div id="p-count" style="font-size: 1.2rem; color: var(--gold); margin: 15px 0;">Players: 0</div>
         <div id="p-list" style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:20px;"></div>
-        <button class="btn btn-primary" id="btn-start" onclick="initRaceSequence()" disabled>Start Race</button>
+        <button class="btn btn-primary" id="btn-start" onclick="preRaceCountdown()" disabled>Start Game</button>
     </div>
 </div>
 
@@ -87,9 +89,52 @@
 
 <script>
 let peer, players = {}, vocab = [], currentIdx = 0, gameOn = false;
-let cfgRounds, cfgQTime, cfgSTime, cfgMaxP, timer, currentAnswer = "", firstCorrect = false;
+let cfgRounds, cfgQTime, cfgSTime, cfgMaxP, timer, currentAnswer = "";
 
-// MOTIVATING AUDIO (Web Audio API)
+// 1. FILE PROCESSING (CSV, Excel, Word)
+async function handleFileUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const ext = file.name.split('.').pop().toLowerCase();
+    
+    if (ext === 'csv') {
+        const reader = new FileReader();
+        reader.onload = (e) => parseText(e.target.result);
+        reader.readAsText(file);
+    } else if (ext === 'xlsx') {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+            const text = json.map(row => row.join(',')).join('\n');
+            parseText(text);
+        };
+        reader.readAsArrayBuffer(file);
+    } else if (ext === 'docx') {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            mammoth.extractRawText({arrayBuffer: e.target.result})
+                .then(result => parseText(result.value))
+                .catch(err => alert("Error reading Word file: " + err));
+        };
+        reader.readAsArrayBuffer(file);
+    }
+}
+
+function parseText(text) {
+    vocab = text.split(/\r?\n/).map(l => l.split(/[;,]/)).filter(p => p.length >= 2).map(p => ({
+        en: p[0].trim(), de: p[1].trim(), err: 0, hits: 0
+    }));
+    if(vocab.length > 0) {
+        vocab = vocab.sort(() => Math.random() - 0.5);
+        document.getElementById('status-text').innerText = `✅ ${vocab.length} Words Loaded`;
+        document.getElementById('btn-lobby').disabled = false;
+    }
+}
+
+// 2. AUDIO (Galloping Rhythm)
 let audioCtx;
 function playTheme() {
     if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -103,38 +148,25 @@ function playTheme() {
     setInterval(() => {
         if(!gameOn) return;
         const now = audioCtx.currentTime;
-        [110, 138, 164, 220].forEach((f, i) => playN(f, now + i*0.2, 0.4));
-    }, 800);
+        playN(110, now, 0.2, 0.1); playN(164, now + 0.2, 0.1, 0.05);
+    }, 600);
 }
 
-function loadCSV(input) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        vocab = e.target.result.split(/\r?\n/).map(l => l.split(/[;,]/)).filter(p => p.length >= 2).map(p => ({
-            en: p[0].trim(), de: p[1].trim(), err: 0, hits: 0
-        }));
-        vocab = vocab.sort(() => Math.random() - 0.5);
-        document.getElementById('status-text').innerText = `✅ ${vocab.length} Words Loaded`;
-        document.getElementById('btn-lobby').disabled = false;
-    };
-    reader.readAsText(input.files[0]);
-}
-
+// 3. LOBBY & RACE LOGIC
 function createLobby() {
     cfgRounds = parseInt(document.getElementById('cfg-rounds').value);
     cfgQTime = parseInt(document.getElementById('cfg-q-timer').value);
     cfgSTime = parseInt(document.getElementById('cfg-s-timer').value);
     cfgMaxP = parseInt(document.getElementById('cfg-players').value);
-
     peer = new Peer();
     peer.on('open', (id) => {
         const url = window.location.href.split('?')[0] + '?join=' + id;
-        new QRCode(document.getElementById("qr-container"), { text: url, width: 200, height: 200 });
+        new QRCode(document.getElementById("qr-container"), { text: url, width: 180, height: 180 });
         showScreen('lobby-screen');
     });
     peer.on('connection', (c) => {
         c.on('data', (d) => {
-            if(d.type === 'join') { players[c.peer] = { name: d.name, score: 0, conn: c, lastRes: 0 }; updateLobbyUI(); }
+            if(d.type === 'join') { players[c.peer] = { name: d.name, score: 0, conn: c, last: 0 }; updateLobbyUI(); }
             if(d.type === 'ans') checkAnswer(c.peer, d.val);
         });
     });
@@ -147,14 +179,12 @@ function updateLobbyUI() {
     document.getElementById('btn-start').disabled = c === 0;
 }
 
-function initRaceSequence() {
+function preRaceCountdown() {
     showScreen('race-screen');
     let cd = 10;
-    const el = document.getElementById('start-timer-text');
-    el.style.display = "block";
+    const el = document.getElementById('start-timer-text'); el.style.display = "block";
     const interval = setInterval(() => {
-        el.innerText = cd;
-        cd--;
+        el.innerText = cd; cd--;
         if(cd < 0) { clearInterval(interval); el.style.display = "none"; startRace(); }
     }, 1000);
 }
@@ -174,105 +204,53 @@ function startRace() {
 }
 
 function runRound() {
-    // Intelligent recycling of difficult words
-    if(currentIdx >= vocab.length) {
-        vocab = vocab.sort((a,b) => (b.err - a.err) || (a.hits - b.hits));
-        currentIdx = 0;
-    }
+    if(currentIdx >= vocab.length) { vocab = vocab.sort((a,b) => b.err - a.err); currentIdx = 0; }
     document.getElementById('sol-box').style.display = "none";
-    firstCorrect = false;
     let isEn = Math.random() < 0.5;
-    let qObj = vocab[currentIdx];
-    let qText = isEn ? qObj.en : qObj.de;
-    currentAnswer = isEn ? qObj.de : qObj.en;
+    currentAnswer = isEn ? vocab[currentIdx].de : vocab[currentIdx].en;
+    let q = "Translate: " + (isEn ? vocab[currentIdx].en : vocab[currentIdx].de);
+    document.getElementById('vocab-question').innerText = q;
+    Object.values(players).forEach(p => { p.last = -1; p.conn.send({ type: 'q', text: q }); });
     
-    document.getElementById('vocab-question').innerText = "Translate: " + qText;
-    Object.values(players).forEach(p => { p.lastRes = -1; p.conn.send({ type: 'q', text: "Translate: " + qText }); });
-    
-    let sec = cfgQTime;
-    clearInterval(timer);
+    let sec = cfgQTime; clearInterval(timer);
     timer = setInterval(() => {
-        document.getElementById('timer-display').innerText = `Time: ${sec}s`;
-        sec--;
-        if(sec < 0) { vocab[currentIdx].err++; triggerReveal(); }
+        document.getElementById('timer-display').innerText = `Time: ${sec}s`; sec--;
+        if(sec < 0) { vocab[currentIdx].err++; reveal(); }
     }, 1000);
 }
 
 function checkAnswer(id, val) {
     if(!gameOn || document.getElementById('sol-box').style.display === "block") return;
-    const isRight = val.toLowerCase().trim() === currentAnswer.toLowerCase().trim();
-    if(isRight) {
-        vocab[currentIdx].hits++;
-        let p = firstCorrect ? 1 : 2;
-        firstCorrect = true;
-        players[id].score += p;
-        players[id].lastRes = p;
-        if((5 + (players[id].score * (85/cfgRounds))) >= 90) endGame(players[id].name);
-        triggerReveal();
-    } else {
-        vocab[currentIdx].err++;
-        players[id].lastRes = -1;
-    }
+    if(val.toLowerCase().trim() === currentAnswer.toLowerCase().trim()) {
+        vocab[currentIdx].hits++; players[id].score++; players[id].last = 1;
+        if(players[id].score >= cfgRounds) endGame(players[id].name);
+        reveal();
+    } else { vocab[currentIdx].err++; players[id].last = -1; }
 }
 
-function triggerReveal() {
+function reveal() {
     clearInterval(timer);
-    const box = document.getElementById('sol-box');
-    box.innerText = "Correct Solution: " + currentAnswer;
-    box.style.display = "block";
-    
+    const box = document.getElementById('sol-box'); box.innerText = "Solution: " + currentAnswer; box.style.display = "block";
     Object.keys(players).forEach(id => {
         const pct = Math.min(90, 5 + (players[id].score * (85/cfgRounds)));
         document.getElementById(`h-${id}`).style.left = pct + "%";
-        players[id].conn.send({ type: 'reveal', res: players[id].lastRes, sol: currentAnswer });
+        players[id].conn.send({ type: 'reveal', res: players[id].last, sol: currentAnswer });
     });
-    
     currentIdx++;
-    if(gameOn) setTimeout(runRound, cfgSTime * 1000); // 5s Reveal
+    if(gameOn) setTimeout(runRound, cfgSTime * 1000);
 }
 
-function endGame(winner) {
-    gameOn = false;
-    document.getElementById('vocab-question').innerText = "🏆 WINNER: " + winner;
-    document.getElementById('sol-box').style.display = "none";
-}
+function endGame(winner) { gameOn = false; document.getElementById('vocab-question').innerText = "🏆 WINNER: " + winner; }
 
 function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
-// CLIENT SIDE
+// 4. CLIENT LOGIC
 const params = new URLSearchParams(window.location.search);
 if(params.has('join')) {
     document.body.innerHTML = `
-        <div class="screen active" id="c-tutorial">
-            <div class="container">
-                <h2 class="game-title">Instructions</h2>
-                <div style="text-align:left; background:rgba(0,0,0,0.2); padding:20px; border-radius:12px; margin-bottom:20px; line-height:1.6;">
-                    <strong>1. The Race:</strong> Translate the word on the screen.<br>
-                    <strong>2. Scoring:</strong> First Correct (+2), Later Correct (+1), Wrong or Slow (-1).<br>
-                    <strong>3. Flow:</strong> Once you submit, your input is locked. Watch the board!<br>
-                    <strong>Example:</strong> Question "Translate: Apple" -> You type "Apfel".
-                </div>
-                <button class="btn btn-primary" onclick="showScreen('c-join')">Understood!</button>
-            </div>
-        </div>
-        <div class="screen" id="c-join">
-            <div class="container">
-                <h2 class="game-title">Join Race</h2>
-                <input type="text" id="p-name" placeholder="Enter your name...">
-                <button class="btn btn-primary" style="margin-top:20px;" onclick="doJoin()">Ready!</button>
-            </div>
-        </div>
-        <div class="screen" id="c-play">
-            <div class="container">
-                <h2 id="q-text" style="color:var(--gold);">Waiting...</h2>
-                <input type="text" id="a-input" placeholder="Type answer...">
-                <button class="btn btn-primary" style="margin-top:20px;" id="btn-send" onclick="sendAns()">Submit</button>
-                <div id="fb-box" style="display:none; margin-top:20px;">
-                    <div id="fb-val" style="font-size:4rem; font-weight:900;"></div>
-                    <p id="fb-sol"></p>
-                </div>
-            </div>
-        </div>`;
+        <div class="screen active" id="c-tut"><div class="container"><h2>How to Play</h2><p>Translate as fast as possible. +1 point for correct, -1 for wrong. Watch the screen for the solution!</p><button class="btn btn-primary" onclick="showScreen('c-join')">OK</button></div></div>
+        <div class="screen" id="c-join"><div class="container"><h2>Your Name</h2><input type="text" id="p-name"><button class="btn btn-primary" style="margin-top:20px;" onclick="doJoin()">Join</button></div></div>
+        <div class="screen" id="c-play"><div class="container"><h2 id="q-text">Waiting...</h2><input type="text" id="a-input"><button class="btn btn-primary" style="margin-top:20px;" id="btn-send" onclick="sendAns()">Submit</button><div id="fb-box" style="display:none; margin-top:20px;"><div id="fb-val" style="font-size:4rem; font-weight:900;"></div><p id="fb-sol"></p></div></div></div>`;
 }
 
 function doJoin() {
@@ -280,28 +258,19 @@ function doJoin() {
     const peerC = new Peer();
     peerC.on('open', () => {
         const c = peerC.connect(params.get('join'));
-        c.on('open', () => {
-            c.send({ type: 'join', name: name });
-            document.getElementById('c-join').innerHTML = "<h1>Joined! Watch the board.</h1>";
-        });
+        c.on('open', () => { c.send({ type: 'join', name: name }); document.getElementById('c-join').innerHTML = "<h1>Joined!</h1>"; });
         c.on('data', (d) => {
             if(d.type === 'go') showScreen('c-play');
             if(d.type === 'q') {
                 document.getElementById('q-text').innerText = d.text;
-                document.getElementById('a-input').disabled = false;
-                document.getElementById('a-input').style.background = "white";
-                document.getElementById('a-input').value = "";
-                document.getElementById('btn-send').style.display = "block";
+                document.getElementById('a-input').disabled = false; document.getElementById('a-input').style.background = "white";
+                document.getElementById('a-input').value = ""; document.getElementById('btn-send').style.display = "block";
                 document.getElementById('fb-box').style.display = "none";
             }
             if(d.type === 'reveal') {
-                document.getElementById('a-input').disabled = true;
-                document.getElementById('a-input').style.background = "#ccc";
-                document.getElementById('btn-send').style.display = "none";
-                document.getElementById('fb-box').style.display = "block";
-                const val = document.getElementById('fb-val');
-                val.innerText = (d.res > 0 ? "+" : "") + d.res;
-                val.style.color = d.res > 0 ? "var(--correct)" : "var(--wrong)";
+                document.getElementById('a-input').disabled = true; document.getElementById('a-input').style.background = "#ccc";
+                document.getElementById('btn-send').style.display = "none"; document.getElementById('fb-box').style.display = "block";
+                const val = document.getElementById('fb-val'); val.innerText = (d.res > 0 ? "+" : "") + d.res; val.style.color = d.res > 0 ? "var(--correct)" : "var(--wrong)";
                 document.getElementById('fb-sol').innerText = "Correct: " + d.sol;
             }
         });
