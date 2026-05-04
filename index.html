@@ -3,21 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏇 VocabRace PRO – SRL Edition</title>
+    <title>🏇 VocabRace PRO – Final Pedagogical Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Boogaloo&family=Nunito:wght@400;700;900&display=swap');
         :root { --gold: #f5c518; --accent: #ff6b35; --dark: #1a1a2e; --white: #f8f9fa; --correct: #06d6a0; --wrong: #ef233c; }
-        body { font-family: 'Nunito', sans-serif; background: var(--dark); color: var(--white); margin: 0; padding: 0; overflow-x: hidden; }
+        body { font-family: 'Nunito', sans-serif; background: var(--dark); color: var(--white); margin: 0; padding: 0; overflow: hidden; }
         .screen { display: none; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
         .screen.active { display: flex; }
         .container { background: rgba(255,255,255,0.08); border-radius: 24px; padding: 30px; max-width: 650px; width: 100%; backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); text-align:center; }
         .game-title { font-family: 'Boogaloo', cursive; font-size: 3.5rem; color: var(--gold); margin-bottom: 20px; }
-        
-        .config-box { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        label { font-size: 0.8rem; color: var(--gold); font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 5px; text-align: left; }
-        input { width: 100%; padding: 12px; border-radius: 8px; border: none; background: #242444; color: white; box-sizing: border-box; font-size: 1rem; }
         
         .upload-area { border: 2px dashed var(--gold); padding: 20px; text-align: center; border-radius: 12px; cursor: pointer; background: rgba(245,197,24,0.05); margin-bottom: 20px; }
         .btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-family: 'Boogaloo', cursive; font-size: 1.6rem; cursor: pointer; transition: 0.2s; }
@@ -26,30 +22,25 @@
 
         #qr-container { background: white; padding: 15px; border-radius: 12px; margin: 20px auto; width: fit-content; border: 5px solid var(--gold); }
         
-        /* Racing Elements */
+        /* Racing UI */
         .track { width: 100%; height: 480px; background: #2d7a1f; position: relative; border-radius: 15px; border: 5px solid #1e5215; overflow: hidden; margin-top: 20px; }
-        .horse { position: absolute; font-size: 2.8rem; transition: left 5s linear; display: flex; flex-direction: column; align-items: center; z-index: 50; }
+        .horse { position: absolute; font-size: 3rem; transition: left 0.8s ease-out; display: flex; flex-direction: column; align-items: center; z-index: 50; transform: scaleX(1); }
         .horse-label { font-size: 0.75rem; background: rgba(0,0,0,0.85); color: white; padding: 2px 6px; border-radius: 4px; margin-bottom: -5px; font-weight: bold; }
         .marker-line { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.15); border-left: 1px dashed rgba(255,255,255,0.2); }
-        .finish { position: absolute; right: 80px; top: 0; bottom: 0; width: 30px; background: repeating-linear-gradient(white 0, white 10px, black 10px, black 20px); z-index: 10; }
         
-        /* Feedback Screens */
-        .solution-reveal { font-size: 2.5rem; color: var(--correct); font-weight: 900; margin-top: 10px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; }
-        .score-display { font-size: 4rem; font-weight: 900; margin: 20px 0; }
-        .tutorial-text { text-align: left; font-size: 1rem; line-height: 1.5; margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; }
+        /* Checkered Goal Area */
+        .goal-area { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; background: repeating-conic-gradient(#fff 0% 25%, #000 0% 50%) 50% / 20px 20px; display: flex; align-items: center; justify-content: center; }
+        .goal-text { background: var(--gold); color: black; font-family: 'Boogaloo', cursive; font-size: 1.5rem; padding: 5px 15px; border-radius: 5px; transform: rotate(-90deg); border: 2px solid black; }
+
+        .solution-reveal { font-size: 2.5rem; color: var(--correct); font-weight: 900; margin-top: 10px; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 15px; border: 2px solid var(--correct); display: none; }
+        #start-countdown { font-size: 8rem; font-family: 'Boogaloo', cursive; color: var(--gold); position: absolute; z-index: 100; text-shadow: 0 0 30px black; }
     </style>
 </head>
 <body>
 
-<!-- TEACHER: SETUP -->
 <div class="screen active" id="setup-screen">
     <div class="container">
-        <div class="game-title">🏇 VocabRace Setup</div>
-        <div class="config-box">
-            <div><label>Rounds</label><input type="number" id="inp-rounds" value="10"></div>
-            <div><label>Timer (Sec)</label><input type="number" id="inp-timer" value="15"></div>
-            <div style="grid-column: span 2;"><label>Max Players</label><input type="number" id="inp-max-players" value="30"></div>
-        </div>
+        <div class="game-title">🏇 VocabRace PRO</div>
         <div class="upload-area" onclick="document.getElementById('csv-input').click()">
             <div id="status-text">📁 Upload CSV (Eng, Ger)</div>
             <input type="file" id="csv-input" accept=".csv" style="display:none" onchange="loadCSV(this)">
@@ -58,41 +49,44 @@
     </div>
 </div>
 
-<!-- TEACHER: LOBBY -->
 <div class="screen" id="lobby-screen">
     <div class="container">
         <div class="game-title">Lobby</div>
         <div id="qr-container"></div>
         <div id="player-status" style="font-size: 1.2rem; color: var(--gold); margin: 15px 0;">Players Joined: 0</div>
         <div id="player-tags" style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:20px;"></div>
-        <button class="btn btn-primary" id="btn-start" onclick="startRace()" disabled>Waiting...</button>
+        <button class="btn btn-primary" id="btn-start" onclick="preStartCountdown()" disabled>Start Game</button>
     </div>
 </div>
 
-<!-- TEACHER: RACE -->
 <div class="screen" id="race-screen">
+    <div id="start-countdown" style="display:none">10</div>
     <div style="text-align:center; width:100%;">
-        <h1 id="vocab-question" style="font-size: 3.5rem; margin: 0; color: var(--gold);">---</h1>
-        <div id="solution-display" class="solution-reveal" style="display:none;"></div>
+        <h1 id="vocab-question" style="font-size: 3rem; margin: 0; color: var(--gold);">---</h1>
+        <div id="solution-display" class="solution-reveal"></div>
         <div id="timer-display" style="font-size: 1.5rem; color: var(--accent); margin-top:10px;">Time: --s</div>
     </div>
-    <div class="track" id="race-track"><div class="finish"></div></div>
+    <div class="track" id="race-track">
+        <div class="goal-area"><div class="goal-text">GOAL</div></div>
+    </div>
 </div>
 
 <script>
 let peer, players = {}, vocab = [], currentIdx = 0, gameOn = false;
-let totalRounds, roundSecs, limitPlayers, timer, currentAnswer = "", firstInRound = false;
+let roundSecs = 15, timer, currentAnswer = "", firstInRound = false;
+let vocabStats = {}; // To track errors for recycling
 
-// PROZEDURALE MUSIK (Synthesizer)
+// ENHANCED PROCEDURAL MUSIC
 let audioCtx;
 function initMusic() {
+    if(audioCtx) return;
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const playNote = (freq, time, duration) => {
+    const playNote = (freq, time, duration, vol=0.05) => {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.type = 'triangle';
+        osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(freq, time);
-        gain.gain.setValueAtTime(0.05, time);
+        gain.gain.setValueAtTime(vol, time);
         gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
         osc.connect(gain); gain.connect(audioCtx.destination);
         osc.start(time); osc.stop(time + duration);
@@ -100,15 +94,22 @@ function initMusic() {
     setInterval(() => {
         if(!gameOn) return;
         const now = audioCtx.currentTime;
-        [220, 261, 329, 392].forEach((f, i) => playNote(f, now + i * 0.25, 0.5));
-    }, 1000);
+        // Galloping rhythm
+        playNote(110, now, 0.2, 0.1);
+        playNote(164.81, now + 0.25, 0.15, 0.05);
+        playNote(220, now + 0.5, 0.2, 0.05);
+    }, 750);
 }
 
 function loadCSV(input) {
     const reader = new FileReader();
     reader.onload = (e) => {
-        vocab = e.target.result.split(/\r?\n/).map(l => l.split(/[;,]/)).filter(p => p.length >= 2).map(p => ({ en: p[0].trim(), de: p[1].trim() }));
-        vocab = vocab.sort(() => Math.random() - 0.5); // Random order
+        vocab = e.target.result.split(/\r?\n/).map(l => l.split(/[;,]/)).filter(p => p.length >= 2).map(p => {
+            const word = { en: p[0].trim(), de: p[1].trim(), errors: 0, hits: 0 };
+            vocabStats[p[0].trim()] = word;
+            return word;
+        });
+        vocab = vocab.sort(() => Math.random() - 0.5);
         document.getElementById('status-text').innerText = `✅ ${vocab.length} Words Loaded`;
         document.getElementById('btn-lobby').disabled = false;
     };
@@ -116,9 +117,6 @@ function loadCSV(input) {
 }
 
 function createLobby() {
-    totalRounds = parseInt(document.getElementById('inp-rounds').value);
-    roundSecs = parseInt(document.getElementById('inp-timer').value);
-    limitPlayers = parseInt(document.getElementById('inp-max-players').value);
     peer = new Peer();
     peer.on('open', (id) => {
         const url = window.location.href.split('?')[0] + '?join=' + id;
@@ -127,7 +125,7 @@ function createLobby() {
     });
     peer.on('connection', (conn) => {
         conn.on('data', (d) => {
-            if(d.type === 'join') { players[conn.peer] = { name: d.name, score: 0, conn: conn, lastResult: 0 }; updateLobby(); }
+            if(d.type === 'join') { players[conn.peer] = { name: d.name, score: 0, conn: conn }; updateLobby(); }
             if(d.type === 'ans') checkAnswer(conn.peer, d.val);
         });
     });
@@ -135,54 +133,93 @@ function createLobby() {
 
 function updateLobby() {
     const c = Object.keys(players).length;
-    document.getElementById('player-status').innerText = `Players: ${c} / ${limitPlayers}`;
+    document.getElementById('player-status').innerText = `Players Joined: ${c}`;
     document.getElementById('player-tags').innerHTML = Object.values(players).map(p => `<span class="player-tag" style="border:1px solid var(--gold); padding:5px 10px; border-radius:15px;">${p.name}</span>`).join(' ');
     document.getElementById('btn-start').disabled = c === 0;
 }
 
-function startRace() {
-    gameOn = true; initMusic();
-    Object.values(players).forEach(p => p.conn.send({ type: 'go' }));
+function preStartCountdown() {
     showScreen('race-screen');
+    initMusic();
+    let count = 10;
+    const el = document.getElementById('start-countdown');
+    el.style.display = "block";
+    const cd = setInterval(() => {
+        count--;
+        el.innerText = count;
+        if(count <= 0) {
+            clearInterval(cd);
+            el.style.display = "none";
+            startRace();
+        }
+    }, 1000);
+}
+
+function startRace() {
+    gameOn = true;
+    Object.values(players).forEach(p => p.conn.send({ type: 'go' }));
     const track = document.getElementById('race-track');
     for(let i=1; i<10; i++) { const l = document.createElement('div'); l.className = 'marker-line'; l.style.left = (i*10)+"%"; track.appendChild(l); }
     Object.keys(players).forEach((id, i) => {
         const h = document.createElement('div'); h.className = 'horse'; h.id = `h-${id}`;
-        h.innerHTML = `<span class="horse-label">${players[id].name}</span>🏇`;
-        h.style.top = (i * (420/Object.keys(players).length) + 20) + "px"; h.style.left = "5%";
+        h.innerHTML = `<span class="horse-label">${players[id].name}</span>🏇`; // 🏇 faces right naturally
+        h.style.top = (i * (400/Object.keys(players).length) + 20) + "px"; h.style.left = "5%";
         track.appendChild(h);
     });
     runRound();
 }
 
 function runRound() {
-    if(currentIdx >= totalRounds) { document.getElementById('vocab-question').innerText = "🏁 RACE OVER!"; return; }
+    // Vocab recycling logic[cite: 2]
+    if(currentIdx >= vocab.length) {
+        vocab = vocab.sort((a, b) => (b.errors - b.hits) - (a.errors - a.hits));
+        currentIdx = 0;
+    }
+    
     document.getElementById('solution-display').style.display = "none";
     firstInRound = false;
     let isEn = Math.random() < 0.5;
-    let q = isEn ? vocab[currentIdx].en : vocab[currentIdx].de;
-    currentAnswer = isEn ? vocab[currentIdx].de : vocab[currentIdx].en;
-    document.getElementById('vocab-question').innerText = "Translate: " + q;
-    Object.values(players).forEach(p => { p.lastResult = -1; p.conn.send({ type: 'q', text: "Translate: " + q }); });
+    let qObj = vocab[currentIdx];
+    let qText = isEn ? qObj.en : qObj.de;
+    currentAnswer = isEn ? qObj.de : qObj.en;
+    
+    document.getElementById('vocab-question').innerText = "Translate: " + qText;
+    Object.values(players).forEach(p => p.conn.send({ type: 'q', text: "Translate: " + qText }));
     
     let sec = roundSecs;
     clearInterval(timer);
     timer = setInterval(() => {
         sec--; document.getElementById('timer-display').innerText = `Time: ${sec}s`;
-        if(sec <= 0) revealSolution();
+        if(sec <= 0) {
+            vocab[currentIdx].errors++;
+            revealSolution();
+        }
     }, 1000);
 }
 
 function checkAnswer(id, val) {
     if(!gameOn || document.getElementById('solution-display').style.display === "block") return;
-    if(val.toLowerCase().trim() === currentAnswer.toLowerCase().trim()) {
-        players[id].lastResult = firstInRound ? 1 : 2;
+    const isCorrect = val.toLowerCase().trim() === currentAnswer.toLowerCase().trim();
+    
+    if(isCorrect) {
+        vocab[currentIdx].hits++;
+        let points = firstInRound ? 1 : 2;
         firstInRound = true;
-        players[id].score += (players[id].lastResult * (85 / (totalRounds * 1.5)));
-        players[id].conn.send({ type: 'wait', res: players[id].lastResult, sol: currentAnswer });
+        players[id].score += points;
+        players[id].conn.send({ type: 'wait', res: points, sol: currentAnswer });
+        
+        // Winner check
+        if(players[id].score >= 20) { // Target score 20
+            revealSolution();
+            setTimeout(() => { 
+                gameOn = false;
+                document.getElementById('vocab-question').innerText = "🏆 WINNER: " + players[id].name;
+            }, 5000);
+            return;
+        }
         revealSolution();
     } else {
-        players[id].lastResult = -1;
+        vocab[currentIdx].errors++;
         players[id].conn.send({ type: 'wait', res: -1, sol: currentAnswer });
     }
 }
@@ -191,12 +228,18 @@ function revealSolution() {
     clearInterval(timer);
     document.getElementById('solution-display').innerText = "Solution: " + currentAnswer;
     document.getElementById('solution-display').style.display = "block";
+    
+    // Update all horse positions during 5s pause[cite: 2]
     Object.keys(players).forEach(id => {
-        document.getElementById(`h-${id}`).style.left = Math.min(90, (5 + players[id].score)) + "%";
-        players[id].conn.send({ type: 'reveal', res: players[id].lastResult, sol: currentAnswer });
+        const pct = Math.min(90, 5 + (players[id].score * 4.25)); // 4.25 per point roughly to reach 90%
+        document.getElementById(`h-${id}`).style.left = pct + "%";
+        // Also send results to clients
+        const lastP = players[id].conn;
+        lastP.send({ type: 'reveal', sol: currentAnswer });
     });
+    
     currentIdx++;
-    setTimeout(runRound, 5000); // 5 SECOND REVEAL
+    if(gameOn) setTimeout(runRound, 5000); // FIXED 5 SECONDS[cite: 2]
 }
 
 function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
@@ -207,37 +250,35 @@ if(p.has('join')) {
     document.body.innerHTML = `
         <div class="screen active" id="client-tutorial">
             <div class="container">
-                <h2 class="game-title">How to Play</h2>
-                <div class="tutorial-text">
-                    <strong>1. Goal:</strong> Translate words as fast as possible.<br>
-                    <strong>2. Scoring:</strong> First correct (+2), later correct (+1), wrong or too slow (-1).<br>
-                    <strong>3. Example:</strong> "Translate: Apple" -> You type: <em>Apfel</em>.<br><br>
-                    Wait for the next round after submitting.
+                <h2 class="game-title">Tutorial</h2>
+                <div style="text-align:left; background:rgba(0,0,0,0.2); padding:15px; border-radius:10px; margin-bottom:20px;">
+                    1. Goal: Reach the finish line!<br>
+                    2. Example: "Translate: Apple" -> Type "Apfel".<br>
+                    3. After typing, your field locks. Watch the board for results!
                 </div>
-                <button class="btn btn-primary" onclick="showJoin()">Got it!</button>
+                <button class="btn btn-primary" onclick="showScreen('client-join')">Accept & Start</button>
             </div>
         </div>
         <div class="screen" id="client-join">
             <div class="container">
-                <h2 class="game-title">Your Name</h2>
+                <h2 class="game-title">Name</h2>
                 <input type="text" id="p-name" placeholder="Enter name...">
-                <button class="btn btn-primary" style="margin-top:20px;" onclick="doJoin()">Join Race</button>
+                <button class="btn btn-primary" style="margin-top:20px;" onclick="doJoin()">Join</button>
             </div>
         </div>
         <div class="screen" id="client-play">
             <div class="container">
-                <h2 id="q-text" style="color:var(--gold);">Waiting...</h2>
-                <input type="text" id="a-input" placeholder="Your Answer...">
-                <button class="btn btn-primary" style="margin-top:20px;" id="btn-send" onclick="sendAns()">Submit</button>
-                <div id="res-box" style="display:none;">
-                    <div id="res-val" class="score-display"></div>
+                <h2 id="q-text" style="color:var(--gold);">Ready?</h2>
+                <input type="text" id="a-input" placeholder="Answer...">
+                <button class="btn btn-primary" style="margin-top:20px;" id="btn-send" onclick="sendAns()">Send</button>
+                <div id="res-box" style="display:none; margin-top:20px;">
+                    <div id="res-val" style="font-size:3rem; font-weight:900;"></div>
                     <p id="res-sol"></p>
                 </div>
             </div>
         </div>`;
 }
 
-function showJoin() { showScreen('client-join'); }
 function doJoin() {
     const name = document.getElementById('p-name').value;
     const peerC = new Peer();
@@ -245,14 +286,14 @@ function doJoin() {
         const c = peerC.connect(p.get('join'));
         c.on('open', () => {
             c.send({ type: 'join', name: name });
-            document.getElementById('client-join').innerHTML = "<h1>Connected! Watch the screen.</h1>";
+            document.getElementById('client-join').innerHTML = "<h1>Joined! Waiting...</h1>";
         });
         c.on('data', (d) => {
             if(d.type === 'go') showScreen('client-play');
             if(d.type === 'q') {
                 document.getElementById('q-text').innerText = d.text;
-                document.getElementById('a-input').style.background = "white";
                 document.getElementById('a-input').disabled = false;
+                document.getElementById('a-input').style.background = "white";
                 document.getElementById('a-input').value = "";
                 document.getElementById('btn-send').style.display = "block";
                 document.getElementById('res-box').style.display = "none";
@@ -262,14 +303,11 @@ function doJoin() {
                 document.getElementById('a-input').style.background = "#ccc";
                 document.getElementById('btn-send').style.display = "none";
                 document.getElementById('res-box').style.display = "block";
-                document.getElementById('res-val').innerText = "...";
+                document.getElementById('res-val').innerText = (d.res > 0 ? "+" : "") + d.res;
+                document.getElementById('res-val').style.color = d.res > 0 ? "var(--correct)" : "var(--wrong)";
             }
             if(d.type === 'reveal') {
-                document.getElementById('res-box').style.display = "block";
-                const v = document.getElementById('res-val');
-                v.innerText = (d.res > 0 ? "+" : "") + d.res;
-                v.style.color = d.res > 0 ? "var(--correct)" : "var(--wrong)";
-                document.getElementById('res-sol').innerText = "Correct: " + d.sol;
+                document.getElementById('res-sol').innerText = "Correct Solution: " + d.sol;
             }
         });
         window.sendAns = () => c.send({ type: 'ans', val: document.getElementById('a-input').value });
