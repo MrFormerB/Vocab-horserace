@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏇 VocabRace PRO – BW Oberstufe Edition</title>
+    <title>🏇 VocabRace PRO – BW Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
@@ -13,7 +13,7 @@
         .screen { display: none; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
         .screen.active { display: flex; }
         .container { background: rgba(255,255,255,0.08); border-radius: 24px; padding: 30px; max-width: 650px; width: 100%; backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); text-align:center; }
-        .game-title { font-family: 'Boogaloo', cursive; font-size: 3.5rem; color: var(--gold); margin-bottom: 20px; }
+        .game-title { font-family: 'Boogaloo', cursive; font-size: 3rem; color: var(--gold); margin-bottom: 20px; }
         
         .config-box { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
         label { font-size: 0.8rem; color: var(--gold); font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 5px; text-align: left; }
@@ -25,73 +25,76 @@
         .btn-primary:disabled { background: #444; color: #888; cursor: not-allowed; }
 
         #qr-container { background: white; padding: 15px; border-radius: 12px; margin: 20px auto; width: fit-content; border: 5px solid var(--gold); }
-        .feedback-badge { position: absolute; font-weight: 900; font-size: 1.5rem; animation: floatUp 1s forwards; z-index: 100; }
-        @keyframes floatUp { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-50px); opacity: 0; } }
 
         /* Track Layout */
         .track { width: 100%; height: 480px; background: #2d7a1f; position: relative; border-radius: 15px; border: 5px solid #1e5215; overflow: hidden; margin-top: 20px; }
         .horse { position: absolute; font-size: 2.8rem; transition: left 0.8s cubic-bezier(0.25, 0.1, 0.25, 1); display: flex; flex-direction: column; align-items: center; z-index: 50; }
-        .horse-label { font-size: 0.75rem; background: rgba(0,0,0,0.85); color: white; padding: 2px 6px; border-radius: 4px; margin-bottom: -5px; font-weight: bold; }
+        .horse-label { font-size: 0.75rem; background: black; color: white; padding: 2px 5px; border-radius: 3px; margin-bottom: -5px; font-weight: bold; }
         
-        /* Grid Lines */
-        .marker-line { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.15); border-left: 1px dashed rgba(255,255,255,0.2); }
-        .finish { position: absolute; right: 80px; top: 0; bottom: 0; width: 30px; background: repeating-linear-gradient(white 0, white 10px, black 10px, black 20px); box-shadow: -5px 0 15px rgba(0,0,0,0.3); z-index: 10; }
+        /* Progress Lines */
+        .grid-line { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.15); border-left: 1px dashed rgba(255,255,255,0.2); }
+        .finish { position: absolute; right: 80px; top: 0; bottom: 0; width: 30px; background: repeating-linear-gradient(white 0, white 10px, black 10px, black 20px); box-shadow: -5px 0 10px rgba(0,0,0,0.3); z-index: 10; }
         
-        .solution-reveal { font-size: 1.8rem; color: var(--correct); font-weight: bold; margin-top: 10px; min-height: 2rem; }
+        /* Feedback */
+        .score-float { position: absolute; font-weight: 900; font-size: 1.5rem; animation: floatUp 1s forwards; z-index: 100; }
+        @keyframes floatUp { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-50px); opacity: 0; } }
+        .solution-box { font-size: 1.8rem; color: var(--correct); font-weight: bold; margin-top: 10px; min-height: 2rem; }
     </style>
 </head>
 <body>
 
-<!-- SETUP SCREEN (TEACHER) -->
+<!-- SETUP SCREEN -->
 <div class="screen active" id="setup-screen">
     <div class="container">
-        <div class="game-title">🏇 VocabRace Setup</div>
+        <div class="game-title">🏇 VocabRace PRO</div>
         <div class="config-box">
-            <div><label>Total Rounds</label><input type="number" id="inp-rounds" value="10"></div>
-            <div><label>Seconds per Round</label><input type="number" id="inp-timer" value="15"></div>
+            <div><label>Rounds</label><input type="number" id="inp-rounds" value="10"></div>
+            <div><label>Seconds</label><input type="number" id="inp-timer" value="15"></div>
             <div style="grid-column: span 2;"><label>Max Players</label><input type="number" id="inp-max-players" value="30"></div>
         </div>
         <div class="upload-area" onclick="document.getElementById('csv-input').click()">
-            <div id="status-text">📁 Upload CSV Vocabulary</div>
+            <div id="status-text">📁 Upload CSV (English, German)</div>
             <input type="file" id="csv-input" accept=".csv" style="display:none" onchange="loadCSV(this)">
         </div>
         <button class="btn btn-primary" id="btn-lobby" onclick="createLobby()" disabled>Upload CSV first</button>
     </div>
 </div>
 
-<!-- LOBBY SCREEN (TEACHER) -->
+<!-- LOBBY SCREEN -->
 <div class="screen" id="lobby-screen">
     <div class="container">
         <div class="game-title">Waiting Room</div>
         <div id="qr-container"></div>
         <div id="player-status" style="font-size: 1.2rem; color: var(--gold); margin: 15px 0;">Players Joined: 0 / 30</div>
-        <div id="player-tags" style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:20px;"></div>
+        <div id="player-tags" style="display:flex; flex-wrap:wrap; gap:5px; justify-content:center; margin-bottom:20px;"></div>
         <button class="btn btn-primary" id="btn-start" onclick="startRace()" disabled>Waiting for players...</button>
     </div>
 </div>
 
-<!-- RACE SCREEN (TEACHER) -->
+<!-- RACE SCREEN -->
 <div class="screen" id="race-screen">
     <div style="text-align:center; width:100%;">
         <h1 id="vocab-question" style="font-size: 3.5rem; margin: 0; color: var(--gold);">---</h1>
-        <div id="solution-display" class="solution-reveal"></div>
-        <div id="timer-display" style="font-size: 1.5rem; color: var(--accent); margin-top:10px;">Time left: --s</div>
+        <div id="solution-display" class="solution-box"></div>
+        <div id="timer-display" style="font-size: 1.5rem; color: var(--accent); margin-top:10px;">Time: --s</div>
     </div>
     <div class="track" id="race-track">
-        <!-- Marker Lines will be added by JS -->
+        <!-- Lines added by JS -->
         <div class="finish"></div>
     </div>
 </div>
 
 <script>
 let peer, players = {}, vocab = [], currentIdx = 0, gameOn = false;
-let totalRounds, roundSecs, limitPlayers, timer, currentAnswer = "", firstCorrectInRound = false;
+let totalRounds, roundSecs, limitPlayers, timer, currentAnswer = "";
 
 function loadCSV(input) {
     const reader = new FileReader();
     reader.onload = function(e) {
         vocab = e.target.result.split(/\r?\n/).map(line => line.split(/[;,]/)).filter(p => p.length >= 2).map(p => ({ en: p[0].trim(), de: p[1].trim() }));
         if(vocab.length > 0) {
+            // SHUFFLE vocab for random selection
+            vocab = vocab.sort(() => Math.random() - 0.5);
             document.getElementById('status-text').innerText = `✅ ${vocab.length} Words Loaded!`;
             document.getElementById('btn-lobby').disabled = false;
             document.getElementById('btn-lobby').innerText = "Create Lobby";
@@ -121,7 +124,7 @@ function createLobby() {
 function updateLobby() {
     const count = Object.keys(players).length;
     document.getElementById('player-status').innerText = `Players: ${count} / ${limitPlayers}`;
-    document.getElementById('player-tags').innerHTML = Object.values(players).map(p => `<span style="background:rgba(255,255,255,0.1); padding:6px 12px; border-radius:15px; border:2px solid var(--gold);">${p.name}</span>`).join(' ');
+    document.getElementById('player-tags').innerHTML = Object.values(players).map(p => `<span style="background:rgba(255,255,255,0.1); padding:5px 10px; border-radius:15px; border:1px solid var(--gold);">${p.name}</span>`).join(' ');
     document.getElementById('btn-start').disabled = count === 0;
     document.getElementById('btn-start').innerText = `Start Race (${count})`;
 }
@@ -136,16 +139,16 @@ function startRace() {
 
 function setupTrack() {
     const track = document.getElementById('race-track');
-    // Add Vertical Marker Lines (10 sections)
+    // Add Progress Lines (every 10%)
     for(let i = 1; i < 10; i++) {
         const line = document.createElement('div');
-        line.className = 'marker-line';
+        line.className = 'grid-line';
         line.style.left = (i * 10) + "%";
         track.appendChild(line);
     }
 
     const pIds = Object.keys(players);
-    const laneH = 420 / pIds.length;
+    const laneH = 400 / pIds.length;
     pIds.forEach((id, i) => {
         const h = document.createElement('div'); h.className = 'horse'; h.id = `h-${id}`;
         h.innerHTML = `<span class="horse-label">${players[id].name}</span>🏇`;
@@ -162,23 +165,23 @@ function runRound() {
     }
 
     document.getElementById('solution-display').innerText = "";
-    firstCorrectInRound = false;
-
-    // Randomize Direction
-    let isEnToDe = Math.random() < 0.5;
-    let questionWord = isEnToDe ? vocab[currentIdx].en : vocab[currentIdx].de;
+    
+    // Randomize Direction DE <-> EN
+    const isEnToDe = Math.random() < 0.5;
+    const question = isEnToDe ? vocab[currentIdx].en : vocab[currentIdx].de;
     currentAnswer = isEnToDe ? vocab[currentIdx].de : vocab[currentIdx].en;
 
-    document.getElementById('vocab-question').innerText = "Translate: " + questionWord;
-    Object.values(players).forEach(p => p.conn.send({ type: 'q', text: "Translate: " + questionWord }));
+    const displayQ = "Translate: " + question;
+    document.getElementById('vocab-question').innerText = displayQ;
+    Object.values(players).forEach(p => p.conn.send({ type: 'q', text: displayQ }));
     
     let sec = roundSecs;
     clearInterval(timer);
     timer = setInterval(() => {
-        sec--; document.getElementById('timer-display').innerText = `Time left: ${sec}s`;
+        sec--; document.getElementById('timer-display').innerText = `Time: ${sec}s`;
         if(sec <= 0) { 
-            // All players who didn't answer lose a point
-            Object.keys(players).forEach(id => showPoints(id, -1));
+            // Deduct points for players who didn't answer in time
+            Object.keys(players).forEach(id => showFeedback(id, -1));
             endRound(); 
         }
     }, 1000);
@@ -187,34 +190,32 @@ function runRound() {
 function checkAnswer(id, val) {
     if(!gameOn) return;
     if(val.toLowerCase().trim() === currentAnswer.toLowerCase().trim()) {
-        let points = firstCorrectInRound ? 1 : 2; // +2 for the very first correct one, +1 for others
-        firstCorrectInRound = true;
-        
-        players[id].score += (points * (85 / (totalRounds * 1.5))); // Visual progress adjustment
-        document.getElementById(`h-${id}`).style.left = Math.min(90, (5 + players[id].score)) + "%";
-        
-        showPoints(id, `+${points}`);
+        const points = currentIdx === 0 ? 2 : 1; // Bonus points logic can be refined
+        players[id].score += (85 / totalRounds);
+        document.getElementById(`h-${id}`).style.left = (5 + players[id].score) + "%";
+        showFeedback(id, "+" + points);
         endRound();
     } else {
-        showPoints(id, -1);
+        showFeedback(id, -1);
     }
 }
 
-function showPoints(id, val) {
+function showFeedback(id, val) {
     const horse = document.getElementById(`h-${id}`);
     const badge = document.createElement('div');
-    badge.className = 'feedback-badge';
+    badge.className = 'score-float';
     badge.innerText = val;
-    badge.style.color = val.toString().startsWith('+') ? 'var(--correct)' : 'var(--wrong)';
+    badge.style.color = val.toString().includes('+') ? 'var(--correct)' : 'var(--wrong)';
     horse.appendChild(badge);
     setTimeout(() => badge.remove(), 1000);
 }
 
 function endRound() {
     clearInterval(timer);
-    document.getElementById('solution-display').innerText = "Correct Answer: " + currentAnswer;
+    // Show Solution
+    document.getElementById('solution-display').innerText = "Solution: " + currentAnswer;
     currentIdx++;
-    setTimeout(runRound, 2500); // 2.5s pause to see the solution
+    setTimeout(runRound, 2500); // 2.5s pause to read solution
 }
 
 function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
@@ -226,7 +227,7 @@ if(params.has('join')) {
         <div class="screen active" style="background:#1a1a2e; padding:20px;">
             <div id="join-form" class="container">
                 <h2 class="game-title">Join Race</h2>
-                <input type="text" id="p-name" placeholder="Enter your name...">
+                <input type="text" id="p-name" placeholder="Enter Nickname...">
                 <button class="btn btn-primary" style="margin-top:20px;" onclick="doJoin()">Join Now!</button>
                 <p id="conn-status" style="margin-top:10px; font-size:0.8rem; color:var(--gold);"></p>
             </div>
@@ -242,13 +243,13 @@ function doJoin() {
     const name = document.getElementById('p-name').value;
     const status = document.getElementById('conn-status');
     if(!name) return;
-    status.innerText = "Connecting to classroom board...";
+    status.innerText = "Connecting...";
     const p = new Peer();
     p.on('open', () => {
         const c = p.connect(params.get('join'));
         c.on('open', () => {
             c.send({ type: 'join', name: name });
-            document.getElementById('join-form').innerHTML = "<h1>Connected! Look at the Smartboard.</h1>";
+            document.getElementById('join-form').innerHTML = "<h1>Connected! Watch the screen.</h1>";
         });
         c.on('data', (d) => {
             if(d.type === 'go') { document.getElementById('join-form').style.display = 'none'; document.getElementById('play-area').style.display = 'block'; }
