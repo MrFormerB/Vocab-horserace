@@ -22,17 +22,16 @@
         label { font-size: 0.75rem; color: var(--teal); font-weight: 700; display: block; margin-bottom: 5px; text-align: left; text-transform: uppercase; }
         input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: white; font-size: 1rem; }
         
-        /* Student Input: Black on White for Focus */
         .client-input { color: #000 !important; background: #fff !important; font-weight: 700; border: 3px solid var(--teal); text-align: center; font-size: 1.2rem; }
         
         .btn { padding: 16px; border-radius: 16px; border: none; font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 900; cursor: pointer; transition: 0.3s; width: 100%; }
         .btn-primary { background: linear-gradient(135deg, var(--purple), var(--teal)); color: white; }
         .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
 
-        /* Race Track with Distance Markers */
+        /* Race Track with White Dashed Markers */
         .track { width: 100%; height: 500px; background: #121431; position: relative; border-radius: 20px; border: 2px solid rgba(255,255,255,0.1); overflow: hidden; margin-top: 30px; }
-        .marker-line { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(1, 255, 255, 0.1); border-left: 1px dashed rgba(255, 255, 255, 0.3); }
-        .marker-label { position: absolute; top: 5px; transform: translateX(-50%); font-size: 0.6rem; color: var(--teal); font-weight: bold; }
+        .marker-line { position: absolute; top: 0; bottom: 0; width: 1px; border-left: 2px dashed rgba(255, 255, 255, 0.4); }
+        .marker-label { position: absolute; top: 10px; transform: translateX(-50%); font-size: 0.7rem; color: white; font-weight: 900; text-shadow: 0 0 5px black; }
         
         .horse { position: absolute; font-size: 3.5rem; transition: left 1s ease-out; display: flex; flex-direction: column; align-items: center; z-index: 100; transform: scaleX(-1); }
         .horse-label { transform: scaleX(-1); font-size: 0.7rem; background: #000; color: var(--teal); padding: 2px 8px; border-radius: 4px; font-weight: 900; margin-bottom: -5px; white-space: nowrap; border: 1px solid var(--teal); }
@@ -70,7 +69,7 @@
         <div id="qr-container" style="display:flex; justify-content:center; margin: 20px 0;"></div>
         <p id="p-count" style="font-size: 1.2rem; color: var(--teal); margin: 10px 0;">Joined: 0</p>
         <div id="p-list" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:30px;"></div>
-        <button class="btn btn-primary" id="btn-start" onclick="startSequence()" disabled>Start Race</button>
+        <button class="btn btn-primary" id="btn-start" onclick="startSequence()" disabled>Start Engines</button>
     </div>
 </div>
 
@@ -83,7 +82,7 @@
         <div id="timer-bar" style="font-size: 1.5rem; color: var(--gold); margin-top:15px; font-weight: 900;">TIME: --S</div>
     </div>
     <div class="track" id="race-track">
-        <!-- Marker Lines will be injected here -->
+        <!-- Marker lines are injected by startRace() -->
         <div class="goal-area"><div class="goal-text">GOAL</div></div>
     </div>
 </div>
@@ -116,7 +115,7 @@ function finalizeVocab(text) {
 
 // 2. LOBBY LOGIC
 function openLobby() {
-    cfgRounds = parseInt(document.getElementById('cfg-rounds').value) || 10;
+    cfgRounds = parseInt(document.getElementById('cfg-rounds').value) || 15;
     cfgQTime = parseInt(document.getElementById('cfg-q-timer').value) || 15;
     cfgSTime = parseInt(document.getElementById('cfg-s-timer').value) || 5;
 
@@ -156,26 +155,33 @@ function startRace() {
     hostClient.publish(ROOM_ID + '/host', JSON.stringify({ type: 'start' }));
     const track = document.getElementById('race-track');
     
-    // Inject Grid Markers
+    // Inject White Dashed Grid Markers
     for(let i=1; i<10; i++) {
-        const l = document.createElement('div'); l.className = 'marker-line'; l.style.left = (i*10)+"%";
-        const lbl = document.createElement('div'); lbl.className = 'marker-label'; lbl.style.left = (i*10)+"%"; lbl.innerText = (100 - i*10) + "% to Goal";
-        track.appendChild(l); track.appendChild(lbl);
+        const xPos = (i * 10);
+        const l = document.createElement('div'); 
+        l.className = 'marker-line'; 
+        l.style.left = xPos + "%";
+        
+        const lbl = document.createElement('div'); 
+        lbl.className = 'marker-label'; 
+        lbl.style.left = xPos + "%"; 
+        lbl.innerText = xPos + "%";
+        
+        track.appendChild(l); 
+        track.appendChild(lbl);
     }
 
     Object.keys(players).forEach((id, i) => {
         const h = document.createElement('div'); h.className = 'horse'; h.id = `h-${id}`;
         h.innerHTML = `<span class="horse-label">${players[id].name}</span>🏇`;
-        h.style.top = (i * (400/Object.keys(players).length) + 40) + "px"; h.style.left = "5%";
+        h.style.top = (i * (400/Object.keys(players).length) + 60) + "px"; h.style.left = "5%";
         track.appendChild(h);
     });
     runRound();
 }
 
 function runRound() {
-    // Intelligent recycling
     if(currentIdx >= vocab.length) { vocab.sort((a,b) => b.err - a.err); currentIdx = 0; }
-    
     document.getElementById('sol-box').style.display = "none";
     firstCorrectInRound = false;
     let isEn = Math.random() < 0.5;
@@ -183,7 +189,6 @@ function runRound() {
     let q = "Translate: " + (isEn ? vocab[currentIdx].en : vocab[currentIdx].de);
     document.getElementById('vocab-question').innerText = q;
     hostClient.publish(ROOM_ID + '/host', JSON.stringify({ type: 'q', text: q }));
-    
     let s = cfgQTime; clearInterval(timer);
     timer = setInterval(() => { 
         document.getElementById('timer-bar').innerText = `TIME: ${s}S`; s--; 
@@ -195,17 +200,16 @@ function evaluateAns(id, val) {
     if(!gameActive || document.getElementById('sol-box').style.display === "block") return;
     if(val.toLowerCase().trim() === currentAnswer.toLowerCase().trim()) {
         vocab[currentIdx].hits++;
-        let pts = firstCorrectInRound ? 1 : 2; // +2 for fastest, +1 for correct
+        let pts = firstCorrectInRound ? 1 : 2; // FASTEST = 2, OTHERS = 1
         firstCorrectInRound = true;
         players[id].score += pts; players[id].lastRes = pts;
         
-        // Update Board[cite: 2]
         const pct = Math.min(88, 5 + (players[id].score * (80/cfgRounds)));
         document.getElementById(`h-${id}`).style.left = pct + "%";
         
         if(players[id].score >= cfgRounds) gameActive = false;
         hostClient.publish(ROOM_ID + '/host', JSON.stringify({ type: 'wait', targetId: id, res: pts, sol: currentAnswer }));
-    } else { players[id].lastRes = 0; } // 0 points for wrong answer[cite: 2]
+    } else { players[id].lastRes = 0; } // WRONG = 0
 }
 
 function reveal() {
@@ -217,13 +221,13 @@ function reveal() {
     else document.getElementById('vocab-question').innerText = "🏁 RACE FINISHED!";
 }
 
-// CLIENT LOGIC
+// 3. CLIENT LOGIC
 const params = new URLSearchParams(window.location.search);
 if(params.has('room')) {
     const room = params.get('room'); const myId = 'p' + Math.random().toString(36).substr(2, 4);
     const clientMqtt = mqtt.connect(BROKER);
-    document.body.innerHTML = `<div class="screen active" id="c-tut"><div class="glass-panel"><h2>Protocol</h2><p>⚡ Fast Correct: +2 pts | ✅ Correct: +1 pt | ❌ Wrong/Slow: 0 pts</p><button class="btn btn-primary" onclick="document.getElementById('c-tut').classList.remove('active'); document.getElementById('c-join').classList.add('active');">Engage</button></div></div>
-        <div class="screen" id="c-join"><div class="glass-panel"><h2>Identity</h2><input type="text" id="p-name" class="client-input" placeholder="Nickname"><button class="btn btn-primary" style="margin-top:20px;" onclick="doJoin()">Connect</button></div></div>
+    document.body.innerHTML = `<div class="screen active" id="c-tut"><div class="glass-panel"><h2>Tutorial</h2><p>⚡ Fast Correct: +2 pts | ✅ Correct: +1 pt | ❌ Wrong/Slow: 0 pts</p><button class="btn btn-primary" onclick="document.getElementById('c-tut').classList.remove('active'); document.getElementById('c-join').classList.add('active');">Next</button></div></div>
+        <div class="screen" id="c-join"><div class="glass-panel"><h2>Identity</h2><input type="text" id="p-name" class="client-input" placeholder="Nickname"><button class="btn btn-primary" style="margin-top:20px;" onclick="doJoin()">Engage</button></div></div>
         <div class="screen" id="c-play"><div class="glass-panel"><h2 id="q-text" style="color:var(--teal);">Linking...</h2><input type="text" id="a-input" class="client-input" placeholder="Translate..."><button class="btn btn-primary" style="margin-top:20px;" id="btn-send" onclick="send()">Transmit</button><div id="fb-box" style="display:none; margin-top:20px;"><div id="fb-val" style="font-size:4rem; font-weight:900;"></div><p id="fb-sol"></p></div></div></div>`;
     clientMqtt.on('connect', () => clientMqtt.subscribe(room + '/host'));
     clientMqtt.on('message', (t, m) => {
