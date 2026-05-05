@@ -3,105 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏇 VocabRace ULTIMATE – BW Oberstufe</title>
-    <!-- Modern Libraries -->
+    <title>🏇 VocabRace ULTIMATE – BGS Edition</title>
+    <!-- Essential Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Outfit:wght@400;600;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&family=Inter:wght@400;700&display=swap');
         
         :root {
-            --neon-purple: #bc13fe;
-            --neon-teal: #01ffff;
-            --neon-pink: #ff00ff;
-            --dark-bg: #0a0b1e;
-            --glass: rgba(255, 255, 255, 0.05);
-            --correct: #00ff88;
-            --wrong: #ff3e3e;
-            --gold: #f5c518;
+            --neon-teal: #01ffff; --neon-purple: #bc13fe; --dark-bg: #0a0b1e;
+            --correct: #00ff88; --wrong: #ff3e3e; --gold: #f5c518; --glass: rgba(255, 255, 255, 0.07);
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: var(--dark-bg);
+            font-family: 'Inter', sans-serif; background: var(--dark-bg);
             background-image: radial-gradient(circle at 50% 50%, #161a3d 0%, #0a0b1e 100%);
-            color: white;
-            margin: 0;
-            overflow: hidden;
+            color: white; margin: 0; overflow-x: hidden;
         }
-
-        h1, h2, .btn { font-family: 'Outfit', sans-serif; text-transform: uppercase; letter-spacing: 1px; }
 
         .screen { display: none; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
         .screen.active { display: flex; }
 
-        /* Glassmorphism Container */
         .glass-panel {
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            padding: 40px;
-            max-width: 800px;
-            width: 100%;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            text-align: center;
+            background: var(--glass); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px; padding: 40px; max-width: 750px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
         }
 
-        .game-title { font-size: 4rem; font-weight: 900; background: linear-gradient(to right, var(--neon-teal), var(--neon-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px; }
+        .game-title { font-family: 'Outfit', sans-serif; font-size: 3.5rem; font-weight: 900; background: linear-gradient(to right, var(--neon-teal), var(--neon-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px; }
 
-        /* Inputs & Buttons */
-        .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-        .input-group { text-align: left; }
-        label { font-size: 0.7rem; color: var(--neon-teal); font-weight: 700; margin-bottom: 8px; display: block; }
-        input { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: white; font-size: 1rem; transition: 0.3s; }
-        input:focus { border-color: var(--neon-teal); outline: none; box-shadow: 0 0 15px rgba(1, 255, 255, 0.3); }
-
-        .btn { padding: 18px 30px; border-radius: 16px; border: none; font-size: 1.2rem; font-weight: 900; cursor: pointer; transition: 0.3s; width: 100%; }
-        .btn-primary { background: linear-gradient(135deg, var(--neon-purple), var(--neon-pink)); color: white; box-shadow: 0 10px 20px rgba(188, 19, 254, 0.3); }
-        .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(188, 19, 254, 0.5); }
-        .btn-primary:disabled { background: #333; cursor: not-allowed; box-shadow: none; transform: none; }
-
-        .upload-zone { border: 2px dashed rgba(255,255,255,0.2); border-radius: 16px; padding: 30px; margin-bottom: 20px; cursor: pointer; transition: 0.3s; }
-        .upload-zone:hover { border-color: var(--neon-teal); background: rgba(1, 255, 255, 0.05); }
-
-        /* QR & Lobby */
-        #qr-container { background: white; padding: 20px; border-radius: 20px; margin: 20px auto; width: fit-content; box-shadow: 0 0 30px rgba(1, 255, 255, 0.2); }
-        .player-tag { background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 30px; border: 1px solid var(--neon-teal); font-size: 0.9rem; font-weight: bold; }
-
-        /* Race Track Styling */
-        .track { 
-            width: 100%; height: 500px; 
-            background: linear-gradient(90deg, #121431 0%, #1a1d40 100%); 
-            position: relative; border-radius: 20px; 
-            border: 2px solid rgba(255,255,255,0.05); 
-            margin-top: 30px; 
-            overflow: hidden;
-        }
-        .marker-line { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(1, 255, 255, 0.1); border-left: 1px dashed rgba(1, 255, 255, 0.2); }
+        .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        label { font-size: 0.75rem; color: var(--neon-teal); font-weight: 700; display: block; margin-bottom: 5px; text-align: left; text-transform: uppercase; }
+        input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: white; font-size: 1rem; }
         
-        .goal-line { 
-            position: absolute; right: 0; top: 0; bottom: 0; width: 100px; 
-            background: repeating-conic-gradient(#111 0% 25%, #eee 0% 50%) 50% / 20px 20px; 
-            display: flex; align-items: center; justify-content: center; 
-            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
-        }
-        .goal-text { font-family: 'Outfit', sans-serif; font-weight: 900; background: var(--gold); color: black; padding: 10px 20px; transform: rotate(-90deg); border-radius: 5px; letter-spacing: 5px; }
+        /* Fixed Input for Students: Black on White for better readability */
+        .client-input { color: #000 !important; background: #fff !important; font-weight: 700; border: 3px solid var(--neon-teal); }
 
-        .horse { position: absolute; font-size: 3.5rem; transition: left 1.2s cubic-bezier(0.34, 1.56, 0.64, 1); display: flex; flex-direction: column; align-items: center; z-index: 100; transform: scaleX(-1); }
-        .horse-label { transform: scaleX(-1); font-size: 0.8rem; background: rgba(0,0,0,0.8); color: var(--neon-teal); padding: 4px 10px; border-radius: 5px; font-weight: 900; white-space: nowrap; margin-bottom: -10px; border: 1px solid var(--neon-teal); }
+        .btn { padding: 16px; border-radius: 16px; border: none; font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 900; cursor: pointer; transition: 0.3s; width: 100%; }
+        .btn-primary { background: linear-gradient(135deg, var(--neon-purple), var(--neon-teal)); color: white; }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(1, 255, 255, 0.3); }
+        .btn-primary:disabled { background: #444; opacity: 0.5; cursor: not-allowed; }
 
-        /* Question & Reveal */
-        #vocab-question { font-family: 'Outfit', sans-serif; font-size: 4rem; font-weight: 900; margin: 0; color: white; text-shadow: 0 0 20px rgba(255,255,255,0.2); }
-        .sol-reveal { font-size: 3rem; color: var(--correct); font-weight: 900; margin-top: 20px; background: rgba(0,255,136,0.1); padding: 20px; border-radius: 20px; border: 2px solid var(--correct); display: none; text-shadow: 0 0 15px var(--correct); }
-        #start-countdown { font-size: 15rem; font-family: 'Outfit', sans-serif; font-weight: 900; color: var(--neon-teal); position: absolute; z-index: 1000; text-shadow: 0 0 50px var(--neon-teal); }
+        .track { width: 100%; height: 480px; background: #121431; position: relative; border-radius: 20px; border: 2px solid rgba(255,255,255,0.1); overflow: hidden; margin-top: 30px; }
+        .horse { position: absolute; font-size: 3rem; transition: left 0.8s ease-out; display: flex; flex-direction: column; align-items: center; z-index: 100; transform: scaleX(-1); }
+        .horse-label { transform: scaleX(-1); font-size: 0.7rem; background: #000; color: var(--neon-teal); padding: 2px 8px; border-radius: 4px; font-weight: 900; margin-bottom: -5px; }
+        
+        .goal-area { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; background: repeating-conic-gradient(#fff 0% 25%, #000 0% 50%) 50% / 20px 20px; display: flex; align-items: center; justify-content: center; border-left: 4px solid var(--gold); }
+        .goal-text { background: var(--gold); color: #000; font-family: 'Outfit', sans-serif; font-weight: 900; padding: 5px 15px; border-radius: 4px; transform: rotate(-90deg); white-space: nowrap; }
 
-        /* Client specific */
-        #a-input { color: black !important; background: white !important; font-weight: 700; font-size: 1.2rem; text-align: center; }
-        .client-q { font-size: 1.5rem; color: var(--neon-teal); margin-bottom: 20px; }
+        .solution-reveal { font-size: 2.5rem; color: var(--correct); font-weight: 900; margin-top: 15px; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 15px; border: 2px solid var(--correct); display: none; }
+        #start-cd { font-size: 10rem; font-family: 'Outfit', sans-serif; font-weight: 900; color: var(--neon-teal); position: absolute; z-index: 1000; text-shadow: 0 0 40px var(--neon-teal); }
     </style>
 </head>
 <body>
@@ -109,142 +62,128 @@
 <!-- TEACHER: SETUP -->
 <div class="screen active" id="setup-screen">
     <div class="glass-panel">
-        <div class="game-title">VocabRace PRO</div>
+        <div class="game-title">VocabRace Setup</div>
         <div class="config-grid">
-            <div class="input-group"><label>Target Points</label><input type="number" id="cfg-rounds" value="10"></div>
-            <div class="input-group"><label>Max Players</label><input type="number" id="cfg-players" value="30"></div>
-            <div class="input-group"><label>Answer Time (s)</label><input type="number" id="cfg-q-timer" value="15"></div>
-            <div class="input-group"><label>Reveal Time (s)</label><input type="number" id="cfg-s-timer" value="5"></div>
+            <div><label>Rounds to Goal</label><input type="number" id="cfg-rounds" value="10"></div>
+            <div><label>Max Players</label><input type="number" id="cfg-players" value="30"></div>
+            <div><label>Question Time (s)</label><input type="number" id="cfg-q-timer" value="15"></div>
+            <div><label>Reveal Time (s)</label><input type="number" id="cfg-s-timer" value="5"></div>
         </div>
-        <div class="upload-zone" onclick="document.getElementById('csv-input').click()">
-            <div id="status-text" style="font-weight: bold; color: var(--neon-teal);">📂 CLICK TO UPLOAD (CSV, DOCX, XLSX)</div>
-            <input type="file" id="csv-input" accept=".csv, .xlsx, .docx" style="display:none" onchange="handleFileUpload(this)">
-        </div>
-        <button class="btn btn-primary" id="btn-lobby" onclick="createLobby()" disabled>Lobby Ready</button>
+        <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">📁 Select Vocabulary File (CSV, Word, Excel)</button>
+        <input type="file" id="file-input" style="display:none" onchange="processFile(this)">
+        <p id="file-status" style="margin: 15px 0; color: var(--neon-teal); font-weight: 700;">No file loaded yet</p>
+        <button class="btn btn-primary" id="btn-lobby" onclick="openLobby()" disabled>Open Lobby</button>
     </div>
 </div>
 
 <!-- TEACHER: LOBBY -->
 <div class="screen" id="lobby-screen">
     <div class="glass-panel">
-        <div class="game-title" style="font-size: 3rem;">Game Lobby</div>
+        <div class="game-title">Lobby</div>
         <div id="qr-container"></div>
-        <div id="p-count" style="font-size: 1.5rem; color: var(--neon-teal); margin-bottom: 20px; font-weight: 900;">0 PLAYERS JOINED</div>
+        <p id="p-count" style="font-size: 1.2rem; color: var(--neon-teal); margin: 20px 0;">Players Joined: 0</p>
         <div id="p-list" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:30px;"></div>
-        <button class="btn btn-primary" id="btn-start" onclick="initCountdown()" disabled>Start Engines</button>
+        <button class="btn btn-primary" id="btn-start" onclick="startSequence()" disabled>Start Race</button>
     </div>
 </div>
 
 <!-- TEACHER: RACE -->
 <div class="screen" id="race-screen">
-    <div id="start-countdown" style="display:none">10</div>
-    <div style="text-align:center; width:100%; z-index:500;">
-        <h1 id="vocab-question">---</h1>
-        <div id="sol-box" class="sol-reveal"></div>
-        <div id="timer-bar" style="font-size: 1.5rem; color: var(--neon-pink); margin-top:20px; font-weight: 900;">TIME: --S</div>
+    <div id="start-cd" style="display:none">10</div>
+    <div style="text-align:center; z-index:500;">
+        <h1 id="vocab-question">Ready?</h1>
+        <div id="sol-box" class="solution-reveal"></div>
+        <div id="timer-bar" style="font-size: 1.5rem; color: var(--accent); margin-top:15px; font-weight: 900;">TIME: --S</div>
     </div>
-    <div class="track" id="race-track">
-        <div class="goal-line"><div class="goal-text">FINISH</div></div>
-    </div>
+    <div class="track" id="race-track"><div class="goal-area"><div class="goal-text">GOAL</div></div></div>
 </div>
 
 <script>
 let peer, players = {}, vocab = [], currentIdx = 0, gameActive = false;
-let cfgRounds, cfgQTime, cfgSTime, cfgMaxP, timer, currentAnswer = "", fastestInRound = false;
+let cfgRounds, cfgQTime, cfgSTime, timer, currentAnswer = "";
 
 // 1. FILE PROCESSING
-async function handleFileUpload(input) {
-    const file = input.files[0]; if (!file) return;
+async function processFile(input) {
+    const file = input.files[0]; if(!file) return;
     const ext = file.name.split('.').pop().toLowerCase();
+    const reader = new FileReader();
     
-    if (ext === 'csv') {
-        const reader = new FileReader();
-        reader.onload = (e) => parse(e.target.result);
+    if(ext === 'csv') {
+        reader.onload = (e) => parseVocab(e.target.result);
         reader.readAsText(file);
-    } else if (ext === 'xlsx') {
-        const reader = new FileReader();
+    } else if(ext === 'xlsx') {
         reader.onload = (e) => {
             const wb = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
             const text = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1}).map(r => r.join(',')).join('\n');
-            parse(text);
+            parseVocab(text);
         };
         reader.readAsArrayBuffer(file);
-    } else if (ext === 'docx') {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            mammoth.extractRawText({arrayBuffer: e.target.result}).then(res => parse(res.value));
-        };
+    } else if(ext === 'docx') {
+        reader.onload = (e) => mammoth.extractRawText({arrayBuffer: e.target.result}).then(res => parseVocab(res.value));
         reader.readAsArrayBuffer(file);
     }
 }
 
-function parse(text) {
+function parseVocab(text) {
     vocab = text.split(/\r?\n/).map(l => l.split(/[;,]/)).filter(p => p.length >= 2).map(p => ({
-        en: p[0].trim(), de: p[1].trim(), err: 0, hits: 0
-    }));
-    if(vocab.length > 0) {
-        vocab = vocab.sort(() => Math.random() - 0.5);
-        document.getElementById('status-text').innerText = `✅ ${vocab.length} WORDS SECURED`;
-        document.getElementById('btn-lobby').disabled = false;
-    }
+        en: p[0].trim(), de: p[1].trim(), err: 0
+    })).sort(() => Math.random() - 0.5);
+    document.getElementById('file-status').innerText = `✅ ${vocab.length} Words Loaded`;
+    document.getElementById('btn-lobby').disabled = vocab.length === 0;
 }
 
 // 2. CONNECTIVITY
-function createLobby() {
+function openLobby() {
     cfgRounds = parseInt(document.getElementById('cfg-rounds').value);
     cfgQTime = parseInt(document.getElementById('cfg-q-timer').value);
     cfgSTime = parseInt(document.getElementById('cfg-s-timer').value);
-    cfgMaxP = parseInt(document.getElementById('cfg-players').value);
+    
     peer = new Peer();
     peer.on('open', (id) => {
         const url = window.location.href.split('?')[0] + '?join=' + id;
-        new QRCode(document.getElementById("qr-container"), { text: url, width: 200, height: 200 });
-        show('lobby-screen');
+        document.getElementById('qr-container').innerHTML = "";
+        new QRCode(document.getElementById("qr-container"), { text: url, width: 180, height: 180 });
+        showScreen('lobby-screen');
     });
     peer.on('connection', (c) => {
         c.on('data', (d) => {
             if(d.type === 'join') { players[c.peer] = { name: d.name, score: 0, conn: c, last: 0 }; updateLobby(); }
-            if(d.type === 'ans') check(c.peer, d.val);
+            if(d.type === 'ans') checkAns(c.peer, d.val);
         });
     });
 }
 
 function updateLobby() {
     const c = Object.keys(players).length;
-    document.getElementById('p-count').innerText = `${c} PLAYERS CONNECTED`;
-    document.getElementById('p-list').innerHTML = Object.values(players).map(p => `<span class="player-tag">${p.name}</span>`).join('');
+    document.getElementById('p-count').innerText = `Players Joined: ${c}`;
+    document.getElementById('p-list').innerHTML = Object.values(players).map(p => `<span style="background:rgba(255,255,255,0.1); padding:8px 15px; border-radius:20px; border:1px solid var(--neon-teal);">${p.name}</span>`).join('');
     document.getElementById('btn-start').disabled = c === 0;
 }
 
-function initCountdown() {
-    show('race-screen');
-    let cd = 10; const el = document.getElementById('start-countdown'); el.style.display = "block";
-    const interval = setInterval(() => {
+function startSequence() {
+    showScreen('race-screen');
+    let cd = 10; const el = document.getElementById('start-cd'); el.style.display = "block";
+    const intv = setInterval(() => {
         el.innerText = cd; cd--;
-        if(cd < 0) { clearInterval(interval); el.style.display = "none"; start(); }
+        if(cd < 0) { clearInterval(intv); el.style.display = "none"; startRace(); }
     }, 1000);
 }
 
-function start() {
+function startRace() {
     gameActive = true;
-    Object.values(players).forEach(p => p.conn.send({ type: 'go' }));
-    const track = document.getElementById('race-track');
-    for(let i=1; i<10; i++) { 
-        const l = document.createElement('div'); l.className = 'marker-line'; l.style.left = (i*10)+"%"; track.appendChild(l); 
-    }
+    Object.values(players).forEach(p => p.conn.send({ type: 'start' }));
     Object.keys(players).forEach((id, i) => {
         const h = document.createElement('div'); h.className = 'horse'; h.id = `h-${id}`;
         h.innerHTML = `<span class="horse-label">${players[id].name}</span>🏇`;
         h.style.top = (i * (400/Object.keys(players).length) + 40) + "px"; h.style.left = "5%";
-        track.appendChild(h);
+        document.getElementById('race-track').appendChild(h);
     });
-    round();
+    runRound();
 }
 
-function round() {
-    if(currentIdx >= vocab.length) { vocab = vocab.sort((a,b) => b.err - a.err); currentIdx = 0; }
+function runRound() {
+    if(currentIdx >= vocab.length) currentIdx = 0;
     document.getElementById('sol-box').style.display = "none";
-    fastestInRound = false;
     let isEn = Math.random() < 0.5;
     currentAnswer = isEn ? vocab[currentIdx].de : vocab[currentIdx].en;
     let q = "Translate: " + (isEn ? vocab[currentIdx].en : vocab[currentIdx].de);
@@ -258,63 +197,79 @@ function round() {
     }, 1000);
 }
 
-function check(id, val) {
+function checkAns(id, val) {
     if(!gameActive || document.getElementById('sol-box').style.display === "block") return;
     if(val.toLowerCase().trim() === currentAnswer.toLowerCase().trim()) {
-        vocab[currentIdx].hits++;
-        let pts = fastestInRound ? 1 : 2; fastestInRound = true;
-        players[id].score += pts; players[id].last = pts;
-        if(players[id].score >= cfgRounds) end(players[id].name);
+        players[id].score += 1; players[id].last = 1; // +1 Point Calculation
+        if(players[id].score >= cfgRounds) gameActive = false;
         reveal();
-    } else { vocab[currentIdx].err++; players[id].last = -1; }
+    } else { players[id].last = -1; }
 }
 
 function reveal() {
     clearInterval(timer);
     const box = document.getElementById('sol-box'); box.innerText = "SOLUTION: " + currentAnswer; box.style.display = "block";
     Object.keys(players).forEach(id => {
-        const pct = Math.min(88, 5 + (players[id].score * (80/cfgRounds)));
+        const p = players[id];
+        const pct = Math.min(88, 5 + (p.score * (80/cfgRounds)));
         document.getElementById(`h-${id}`).style.left = pct + "%";
-        players[id].conn.send({ type: 'reveal', res: players[id].last, sol: currentAnswer });
+        p.conn.send({ type: 'reveal', res: p.last, sol: currentAnswer });
     });
     currentIdx++;
-    if(gameActive) setTimeout(round, cfgSTime * 1000);
+    if(gameActive) setTimeout(runRound, cfgSTime * 1000);
+    else document.getElementById('vocab-question').innerText = "🏁 RACE FINISHED";
 }
 
-function end(w) { gameActive = false; document.getElementById('vocab-question').innerText = "🏆 CHAMPION: " + w; }
-function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
 // 3. CLIENT LOGIC
 const params = new URLSearchParams(window.location.search);
 if(params.has('join')) {
     document.body.innerHTML = `
-        <div class="screen active" id="c-tut"><div class="glass-panel"><h2>Protocol</h2><p>Translate fast. Fastest Correct gets +2. Errors result in -1. Follow the Board!</p><button class="btn btn-primary" onclick="show('c-join')">SYNCED</button></div></div>
-        <div class="screen" id="c-join"><div class="glass-panel"><h2>Identity</h2><input type="text" id="p-name" placeholder="Enter Nickname"><button class="btn btn-primary" style="margin-top:20px;" onclick="doJoin()">ENGAGE</button></div></div>
-        <div class="screen" id="c-play"><div class="glass-panel"><h2 id="q-text" class="client-q">LINKING...</h2><input type="text" id="a-input" placeholder="Transmission"><button class="btn btn-primary" style="margin-top:20px;" id="btn-send" onclick="send()">SEND</button><div id="fb-box" style="display:none; margin-top:20px;"><div id="fb-val" style="font-size:4rem; font-weight:900;"></div><p id="fb-sol"></p></div></div></div>`;
+        <div class="screen active" id="c-tut"><div class="glass-panel">
+            <h2>Tutorial</h2>
+            <p style="text-align:left;">1. Translate as fast as possible.<br>2. Correct answer gives <strong>+1 point</strong>.<br>3. Wrong answer gives -1 point.<br>4. Follow the Smartboard!</p>
+            <button class="btn btn-primary" onclick="showScreen('c-join')">Accept & Start</button>
+        </div></div>
+        <div class="screen" id="c-join"><div class="glass-panel">
+            <h2>Your Identity</h2>
+            <input type="text" id="p-name" class="client-input" placeholder="Enter Nickname">
+            <button class="btn btn-primary" style="margin-top:20px;" onclick="doJoin()">Connect</button>
+        </div></div>
+        <div class="screen" id="c-play"><div class="glass-panel">
+            <h2 id="q-text">Linking...</h2>
+            <input type="text" id="a-input" class="client-input" placeholder="Transmission...">
+            <button class="btn btn-primary" style="margin-top:20px;" id="btn-send" onclick="sendAns()">Transmit</button>
+            <div id="fb-box" style="display:none; margin-top:20px;"><div id="fb-val" style="font-size:3rem; font-weight:900;"></div><p id="fb-sol"></p></div>
+        </div></div>`;
 }
 
 function doJoin() {
-    const n = document.getElementById('p-name').value;
+    const name = document.getElementById('p-name').value; if(!name) return;
     const peerC = new Peer();
     peerC.on('open', () => {
         const c = peerC.connect(params.get('join'));
-        c.on('open', () => { c.send({ type: 'join', name: n }); document.getElementById('c-join').innerHTML = "<h1>CONNECTED</h1>"; });
+        c.on('open', () => { 
+            c.send({ type: 'join', name: name }); 
+            document.getElementById('c-join').innerHTML = "<h1>Connected! Wait for start.</h1>"; 
+        });
         c.on('data', (d) => {
-            if(d.type === 'go') show('c-play');
+            if(d.type === 'start') showScreen('c-play');
             if(d.type === 'q') {
                 document.getElementById('q-text').innerText = d.text;
-                document.getElementById('a-input').disabled = false; document.getElementById('a-input').style.background = "white";
-                document.getElementById('a-input').value = ""; document.getElementById('btn-send').style.display = "block";
+                const inp = document.getElementById('a-input'); inp.disabled = false; inp.style.background = "white";
+                inp.value = ""; document.getElementById('btn-send').style.display = "block";
                 document.getElementById('fb-box').style.display = "none";
             }
             if(d.type === 'reveal') {
-                document.getElementById('a-input').disabled = true; document.getElementById('a-input').style.background = "#ccc";
+                const inp = document.getElementById('a-input'); inp.disabled = true; inp.style.background = "#ccc";
                 document.getElementById('btn-send').style.display = "none"; document.getElementById('fb-box').style.display = "block";
-                const val = document.getElementById('fb-val'); val.innerText = (d.res > 0 ? "+" : "") + d.res; val.style.color = d.res > 0 ? "var(--correct)" : "var(--wrong)";
+                const val = document.getElementById('fb-val'); val.innerText = (d.res > 0 ? "+1" : "-1");
+                val.style.color = d.res > 0 ? "var(--correct)" : "var(--wrong)";
                 document.getElementById('fb-sol').innerText = "Correct: " + d.sol;
             }
         });
-        window.send = () => c.send({ type: 'ans', val: document.getElementById('a-input').value });
+        window.sendAns = () => c.send({ type: 'ans', val: document.getElementById('a-input').value });
     });
 }
 </script>
