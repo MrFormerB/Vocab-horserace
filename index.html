@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏇 VocabRace ULTIMATE – School Stability Edition</title>
+    <title>🏇 VocabRace ULTIMATE – Global Fix</title>
+    <!-- Stable Libraries -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -18,7 +19,7 @@
         body {
             font-family: 'Inter', sans-serif; background: var(--dark-bg);
             background-image: radial-gradient(circle at 50% 50%, #161a3d 0%, #0a0b1e 100%);
-            color: white; margin: 0; overflow: hidden;
+            color: white; margin: 0; overflow-x: hidden;
         }
         .screen { display: none; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
         .screen.active { display: flex; }
@@ -35,7 +36,7 @@
         .btn-primary { background: linear-gradient(135deg, var(--neon-purple), var(--neon-teal)); color: white; }
         .btn-primary:disabled { background: #444; opacity: 0.5; cursor: not-allowed; }
         .track { width: 100%; height: 480px; background: #121431; position: relative; border-radius: 20px; border: 2px solid rgba(255,255,255,0.1); overflow: hidden; margin-top: 30px; }
-        .horse { position: absolute; font-size: 3rem; transition: left 0.8s ease-out; display: flex; flex-direction: column; align-items: center; z-index: 100; transform: scaleX(-1); }
+        .horse { position: absolute; font-size: 3rem; transition: left 1s ease-out; display: flex; flex-direction: column; align-items: center; z-index: 100; transform: scaleX(-1); }
         .horse-label { transform: scaleX(-1); font-size: 0.7rem; background: #000; color: var(--neon-teal); padding: 2px 8px; border-radius: 4px; font-weight: 900; margin-bottom: -5px; white-space: nowrap; }
         .goal-area { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; background: repeating-conic-gradient(#fff 0% 25%, #000 0% 50%) 50% / 20px 20px; display: flex; align-items: center; justify-content: center; border-left: 4px solid var(--gold); }
         .goal-text { background: var(--gold); color: #000; font-family: 'Outfit', sans-serif; font-weight: 900; padding: 5px 15px; border-radius: 4px; transform: rotate(-90deg); }
@@ -46,14 +47,15 @@
 </head>
 <body>
 
+<!-- TEACHER: SETUP -->
 <div class="screen active" id="setup-screen">
     <div class="glass-panel">
         <div class="game-title">VocabRace Setup</div>
         <div class="config-grid">
             <div><label>Score to Win</label><input type="number" id="cfg-rounds" value="10"></div>
             <div><label>Max Players</label><input type="number" id="cfg-players" value="30"></div>
-            <div><label>Question Time (s)</label><input type="number" id="cfg-q-timer" value="15"></div>
-            <div><label>Reveal Time (s)</label><input type="number" id="cfg-s-timer" value="5"></div>
+            <div><label>Question Timer (s)</label><input type="number" id="cfg-q-timer" value="15"></div>
+            <div><label>Reveal Timer (s)</label><input type="number" id="cfg-s-timer" value="5"></div>
         </div>
         <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">📁 Select Vocabulary (CSV/XLSX/DOCX)</button>
         <input type="file" id="file-input" style="display:none" onchange="processFile(this)">
@@ -62,6 +64,7 @@
     </div>
 </div>
 
+<!-- TEACHER: LOBBY -->
 <div class="screen" id="lobby-screen">
     <div class="glass-panel">
         <div class="game-title">Waiting Room</div>
@@ -72,6 +75,7 @@
     </div>
 </div>
 
+<!-- TEACHER: RACE -->
 <div class="screen" id="race-screen">
     <div id="start-cd" style="display:none">10</div>
     <div style="text-align:center; z-index:500;">
@@ -83,9 +87,10 @@
 </div>
 
 <script>
-// PeerJS Config with ICE Servers to bypass School Firewalls
+// PeerJS Configuration with global STUN servers for NAT Traversal
 const peerConfig = {
-    config: { 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }, { 'urls': 'stun:stun1.l.google.com:19302' }] }
+    config: { 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }, { 'urls': 'stun:stun1.l.google.com:19302' }] },
+    debug: 2
 };
 
 let peer, players = {}, vocab = [], currentIdx = 0, gameActive = false;
@@ -112,7 +117,7 @@ function openLobby() {
     cfgSTime = parseInt(document.getElementById('cfg-s-timer').value);
     peer = new Peer(peerConfig);
     peer.on('open', (id) => {
-        const url = window.location.href.split('?')[0] + '?join=' + id;
+        const url = window.location.origin + window.location.pathname + '?join=' + id;
         document.getElementById('qr-container').innerHTML = "";
         new QRCode(document.getElementById("qr-container"), { text: url, width: 200, height: 200 });
         showScreen('lobby-screen');
@@ -166,7 +171,7 @@ function runRound() {
 function handleAnswer(id, val) {
     if(!gameActive || document.getElementById('sol-box').style.display === "block") return;
     if(val.toLowerCase().trim() === currentAnswer.toLowerCase().trim()) {
-        let pts = firstCorrectInRound ? 1 : 2; // +2 for fastest
+        let pts = firstCorrectInRound ? 1 : 2; // +2 fastest, +1 correct
         firstCorrectInRound = true;
         players[id].score += pts; players[id].lastResult = pts;
         if(players[id].score >= cfgRounds) gameActive = false;
@@ -182,37 +187,37 @@ function reveal() {
     Object.keys(players).forEach(id => { players[id].conn.send({ type: 'reveal', res: players[id].lastResult, sol: currentAnswer }); });
     currentIdx++;
     if(gameActive) setTimeout(runRound, cfgSTime * 1000);
-    else document.getElementById('vocab-question').innerText = "🏁 CHAMPION CROWNED!";
+    else document.getElementById('vocab-question').innerText = "🏁 RACE FINISHED!";
 }
 
 function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
-// CLIENT SIDE
+// CLIENT LOGIC
 const params = new URLSearchParams(window.location.search);
 if(params.has('join')) {
     const hostId = params.get('join');
-    document.body.innerHTML = `<div class="screen active" id="c-tut"><div class="glass-panel"><h2 class="game-title" style="font-size:2rem;">Protocol</h2><p>⚡ Fastest Correct: +2 | ✅ Correct: +1 | ❌ Wrong: -1</p><button class="btn btn-primary" onclick="showScreen('c-join')">Engage</button></div></div>
-        <div class="screen" id="c-join"><div class="glass-panel"><h2 class="game-title" style="font-size:2rem;">Identity</h2><input type="text" id="p-name" class="client-input" placeholder="Enter Nickname"><button class="btn btn-primary" style="margin-top:20px;" onclick="connectToHost('${hostId}')">Connect</button><p id="c-status" style="margin-top:10px; color:var(--neon-teal);"></p></div></div>
-        <div class="screen" id="c-play"><div class="glass-panel"><h2 id="q-text" style="color:var(--neon-teal);">Linking...</h2><input type="text" id="a-input" class="client-input" placeholder="Type translation..."><button class="btn btn-primary" style="margin-top:20px;" id="btn-send" onclick="sendAns()">Transmit</button><div id="fb-box" style="display:none; margin-top:20px;"><div id="fb-val" style="font-size:4rem; font-weight:900;"></div><p id="fb-sol"></p></div></div></div>`;
+    document.body.innerHTML = `<div class="screen active" id="c-tut"><div class="glass-panel"><h2 class="game-title" style="font-size:2rem;">Protocol</h2><p>⚡ Fastest Correct: +2 pts | ✅ Correct: +1 pt | ❌ Wrong/Slow: -1 pt</p><button class="btn btn-primary" onclick="showScreen('c-join')">Engage</button></div></div>
+        <div class="screen" id="c-join"><div class="glass-panel"><h2 class="game-title" style="font-size:2rem;">Identity</h2><input type="text" id="p-name" class="client-input" placeholder="Enter Nickname"><button class="btn btn-primary" style="margin-top:20px;" onclick="connectToHost('${hostId}')">Connect</button><p id="c-status" style="margin-top:10px; color:var(--neon-teal); font-size:0.8rem;"></p></div></div>
+        <div class="screen" id="c-play"><div class="glass-panel"><h2 id="q-text" style="color:var(--neon-teal);">Linking...</h2><input type="text" id="a-input" class="client-input" placeholder="Type translation..."><button class="btn btn-primary" style="margin-top:20px;" id="btn-send" onclick="sendAns()">Transmit</button><div id="fb-box" style="display:none; margin-top:20px;"><div id="fb-val" style="font-size:4rem; font-weight:900;"></div><p id="fb-sol" style="font-weight:bold;"></p></div></div></div>`;
 }
 
 function connectToHost(hostId) {
     const name = document.getElementById('p-name').value; if(!name) return;
-    const status = document.getElementById('c-status'); status.innerText = "Initializing Sync...";
+    const status = document.getElementById('c-status'); status.innerText = "Initializing Peer...";
     const clientPeer = new Peer(peerConfig);
     clientPeer.on('open', (id) => {
-        status.innerText = "Syncing with Race Track...";
+        status.innerText = "Searching Host...";
         const conn = clientPeer.connect(hostId, { reliable: true });
-        conn.on('open', () => { conn.send({ type: 'join', name: name }); document.getElementById('c-join').innerHTML = "<h1>SYNCED</h1><p>Ready to galopp!</p>"; });
+        conn.on('open', () => { conn.send({ type: 'join', name: name }); document.getElementById('c-join').innerHTML = "<h1>SYNCED</h1><p>Watch Board!</p>"; });
         conn.on('data', (d) => {
             if(d.type === 'start') showScreen('c-play');
             if(d.type === 'q') { document.getElementById('q-text').innerText = d.text; document.getElementById('a-input').disabled = false; document.getElementById('a-input').style.background = "#fff"; document.getElementById('a-input').value = ""; document.getElementById('btn-send').style.display = "block"; document.getElementById('fb-box').style.display = "none"; }
             if(d.type === 'wait') { document.getElementById('a-input').disabled = true; document.getElementById('a-input').style.background = "#ccc"; document.getElementById('btn-send').style.display = "none"; document.getElementById('fb-box').style.display = "block"; document.getElementById('fb-val').innerText = "..."; }
             if(d.type === 'reveal') { document.getElementById('fb-box').style.display = "block"; const val = document.getElementById('fb-val'); val.innerText = (d.res > 0 ? "+" + d.res : d.res); val.style.color = d.res > 0 ? "var(--correct)" : "var(--wrong)"; document.getElementById('fb-sol').innerText = "Solution: " + d.sol; }
         });
-        conn.on('error', (err) => { status.innerText = "Negotiation Error. Retrying..."; setTimeout(() => connectToHost(hostId), 2000); });
+        conn.on('error', (err) => { status.innerText = "Retrying connection..."; setTimeout(() => connectToHost(hostId), 2000); });
     });
-    clientPeer.on('error', (err) => { status.innerText = "Network Blocked. Try mobile data or reload."; });
+    clientPeer.on('error', (err) => { status.innerText = "Network Blocked. Use mobile data."; });
 }
 </script>
 </body>
