@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏇 VocabRace ULTIMATE – School-Proof Edition</title>
-    <!-- Modern Libraries: MQTT for Relay, QRCode, Excel, Word -->
+    <title>🏇 VocabRace ULTIMATE – School-Proof B2/C1</title>
+    <!-- Stable Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -21,30 +21,30 @@
         .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
         label { font-size: 0.75rem; color: var(--neon-teal); font-weight: 700; display: block; margin-bottom: 5px; text-align: left; text-transform: uppercase; }
         input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: white; font-size: 1rem; }
+        /* High Contrast Client Input */
         .client-input { color: #000 !important; background: #fff !important; font-weight: 700; border: 3px solid var(--neon-teal); text-align: center; font-size: 1.2rem; }
         .btn { padding: 16px; border-radius: 16px; border: none; font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 900; cursor: pointer; transition: 0.3s; width: 100%; }
         .btn-primary { background: linear-gradient(135deg, var(--neon-purple), var(--neon-teal)); color: white; }
         .track { width: 100%; height: 480px; background: #121431; position: relative; border-radius: 20px; border: 2px solid rgba(255,255,255,0.1); overflow: hidden; margin-top: 30px; }
-        .horse { position: absolute; font-size: 3rem; transition: left 1s ease-out; display: flex; flex-direction: column; align-items: center; z-index: 100; transform: scaleX(-1); }
+        .horse { position: absolute; font-size: 3rem; transition: left 0.8s ease-out; display: flex; flex-direction: column; align-items: center; z-index: 100; transform: scaleX(-1); }
         .horse-label { transform: scaleX(-1); font-size: 0.7rem; background: #000; color: var(--neon-teal); padding: 2px 8px; border-radius: 4px; font-weight: 900; margin-bottom: -5px; white-space: nowrap; }
         .goal-area { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; background: repeating-conic-gradient(#fff 0% 25%, #000 0% 50%) 50% / 20px 20px; display: flex; align-items: center; justify-content: center; border-left: 4px solid var(--gold); }
         .goal-text { background: var(--gold); color: #000; font-family: 'Outfit', sans-serif; font-weight: 900; padding: 5px 15px; border-radius: 4px; transform: rotate(-90deg); }
-        .solution-reveal { font-size: 2.5rem; color: var(--correct); font-weight: 900; margin-top: 15px; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 15px; border: 2px solid var(--correct); display: none; }
+        .solution-reveal { font-size: 2.5rem; color: var(--correct); font-weight: 900; margin-top: 15px; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 15px; border: 2px solid var(--correct); display: none; }
         #start-cd { font-size: 12rem; font-family: 'Outfit', sans-serif; font-weight: 900; color: var(--neon-teal); position: absolute; z-index: 1000; text-shadow: 0 0 50px var(--neon-teal); }
         .marker-line { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(1, 255, 255, 0.1); border-left: 1px dashed rgba(255, 255, 255, 0.2); }
     </style>
 </head>
 <body>
 
-<!-- TEACHER: SETUP -->
 <div class="screen active" id="setup-screen">
     <div class="glass-panel">
         <div class="game-title">VocabRace Setup</div>
         <div class="config-grid">
             <div><label>Score to Win</label><input type="number" id="cfg-rounds" value="10"></div>
             <div><label>Max Players</label><input type="number" id="cfg-players" value="30"></div>
-            <div><label>Question Time (s)</label><input type="number" id="cfg-q-timer" value="15"></div>
-            <div><label>Reveal Time (s)</label><input type="number" id="cfg-s-timer" value="5"></div>
+            <div><label>Q-Timer (sec)</label><input type="number" id="cfg-q-timer" value="15"></div>
+            <div><label>Reveal Time (sec)</label><input type="number" id="cfg-s-timer" value="5"></div>
         </div>
         <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">📁 Select Vocabulary (CSV/XLSX/DOCX)</button>
         <input type="file" id="file-input" style="display:none" onchange="processFile(this)">
@@ -53,10 +53,9 @@
     </div>
 </div>
 
-<!-- TEACHER: LOBBY -->
 <div class="screen" id="lobby-screen">
     <div class="glass-panel">
-        <div class="game-title">Waiting Room</div>
+        <div class="game-title">Lobby</div>
         <div id="qr-container" style="display:flex; justify-content:center;"></div>
         <p id="p-count" style="font-size: 1.2rem; color: var(--neon-teal); margin: 20px 0;">Joined: 0</p>
         <div id="p-list" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:30px;"></div>
@@ -64,7 +63,6 @@
     </div>
 </div>
 
-<!-- TEACHER: RACE -->
 <div class="screen" id="race-screen">
     <div id="start-cd" style="display:none">10</div>
     <div style="text-align:center; z-index:500;">
@@ -76,50 +74,45 @@
 </div>
 
 <script>
-// MQTT Relay Configuration (Public Broker)
-const BROKER = 'wss://broker.hivemq.com:8000/mqtt';
-const ROOM_ID = 'vocab_race_' + Math.random().toString(36).substr(2, 9);
-let client, players = {}, vocab = [], currentIdx = 0, gameActive = false;
+// MQTT Secure Relay Configuration
+const BROKER = 'wss://broker.hivemq.com:8884/mqtt'; 
+const ROOM_ID = 'vocab_' + Math.random().toString(36).substr(2, 9);
+let hostClient, players = {}, vocab = [], currentIdx = 0, gameActive = false;
 let cfgRounds, cfgQTime, cfgSTime, timer, currentAnswer = "", firstCorrectInRound = false;
 
-// 1. FILE PROCESSING
 async function processFile(input) {
     const file = input.files[0]; if(!file) return;
     const ext = file.name.split('.').pop().toLowerCase();
     const reader = new FileReader();
-    if(ext === 'csv') { reader.onload = (e) => parseVocab(e.target.result); reader.readAsText(file); }
-    else if(ext === 'xlsx') { reader.onload = (e) => { const wb = XLSX.read(new Uint8Array(e.target.result), {type: 'array'}); parseVocab(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1}).map(r => r.join(',')).join('\n')); }; reader.readAsArrayBuffer(file); }
-    else if(ext === 'docx') { reader.onload = (e) => mammoth.extractRawText({arrayBuffer: e.target.result}).then(res => parseVocab(res.value)); reader.readAsArrayBuffer(file); }
+    if(ext === 'csv') { reader.onload = (e) => parse(e.target.result); reader.readAsText(file); }
+    else if(ext === 'xlsx') { reader.onload = (e) => { const wb = XLSX.read(new Uint8Array(e.target.result), {type: 'array'}); parse(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1}).map(r => r.join(',')).join('\n')); }; reader.readAsArrayBuffer(file); }
+    else if(ext === 'docx') { reader.onload = (e) => mammoth.extractRawText({arrayBuffer: e.target.result}).then(res => parse(res.value)); reader.readAsArrayBuffer(file); }
 }
 
-function parseVocab(text) {
+function parse(text) {
     vocab = text.split(/\r?\n/).map(l => l.split(/[;,]/)).filter(p => p.length >= 2).map(p => ({ en: p[0].trim(), de: p[1].trim(), err: 0 })).sort(() => Math.random() - 0.5);
     document.getElementById('file-status').innerText = `✅ ${vocab.length} Words Loaded`;
-    document.getElementById('btn-lobby').disabled = vocab.length === 0;
+    document.getElementById('btn-lobby').disabled = false;
 }
 
-// 2. CONNECTIVITY (MQTT RELAY)[cite: 2]
 function openLobby() {
     cfgRounds = parseInt(document.getElementById('cfg-rounds').value);
     cfgQTime = parseInt(document.getElementById('cfg-q-timer').value);
     cfgSTime = parseInt(document.getElementById('cfg-s-timer').value);
     
-    client = mqtt.connect(BROKER);
-    client.on('connect', () => {
-        client.subscribe(ROOM_ID + '/client');
+    hostClient = mqtt.connect(BROKER);
+    hostClient.on('connect', () => {
+        hostClient.subscribe(ROOM_ID + '/client');
         const url = window.location.origin + window.location.pathname + '?room=' + ROOM_ID;
         document.getElementById('qr-container').innerHTML = "";
         new QRCode(document.getElementById("qr-container"), { text: url, width: 200, height: 200 });
         showScreen('lobby-screen');
     });
 
-    client.on('message', (topic, message) => {
+    hostClient.on('message', (topic, message) => {
         const d = JSON.parse(message.toString());
-        if(d.type === 'join') { 
-            players[d.id] = { name: d.name, score: 0, lastResult: 0 }; 
-            updateLobby(); 
-        }
-        if(d.type === 'ans') handleAnswer(d.id, d.val);
+        if(d.type === 'join') { players[d.id] = { name: d.name, score: 0, lastResult: 0 }; updateLobby(); }
+        if(d.type === 'ans') evaluateAnswer(d.id, d.val);
     });
 }
 
@@ -138,7 +131,7 @@ function startSequence() {
 
 function startRace() {
     gameActive = true;
-    client.publish(ROOM_ID + '/host', JSON.stringify({ type: 'start' }));
+    hostClient.publish(ROOM_ID + '/host', JSON.stringify({ type: 'start' }));
     Object.keys(players).forEach((id, i) => {
         const h = document.createElement('div'); h.className = 'horse'; h.id = `h-${id}`;
         h.innerHTML = `<span class="horse-label">${players[id].name}</span>🏇`;
@@ -156,30 +149,27 @@ function runRound() {
     currentAnswer = isEn ? vocab[currentIdx].de : vocab[currentIdx].en;
     let qText = "Translate: " + (isEn ? vocab[currentIdx].en : vocab[currentIdx].de);
     document.getElementById('vocab-question').innerText = qText;
-    client.publish(ROOM_ID + '/host', JSON.stringify({ type: 'q', text: qText }));
+    hostClient.publish(ROOM_ID + '/host', JSON.stringify({ type: 'q', text: qText }));
     let s = cfgQTime; clearInterval(timer);
     timer = setInterval(() => { document.getElementById('timer-bar').innerText = `TIME: ${s}S`; s--; if(s < 0) { vocab[currentIdx].err++; reveal(); } }, 1000);
 }
 
-function handleAnswer(id, val) {
+function evaluateAnswer(id, val) {
     if(!gameActive || document.getElementById('sol-box').style.display === "block") return;
     if(val.toLowerCase().trim() === currentAnswer.toLowerCase().trim()) {
-        let pts = firstCorrectInRound ? 1 : 2;
-        firstCorrectInRound = true;
+        let pts = firstCorrectInRound ? 1 : 2; firstCorrectInRound = true;
         players[id].score += pts; players[id].lastResult = pts;
         if(players[id].score >= cfgRounds) gameActive = false;
         const pct = Math.min(88, 5 + (players[id].score * (80/cfgRounds)));
         document.getElementById(`h-${id}`).style.left = pct + "%";
-        client.publish(ROOM_ID + '/host', JSON.stringify({ type: 'wait', targetId: id, res: pts, sol: currentAnswer }));
+        hostClient.publish(ROOM_ID + '/host', JSON.stringify({ type: 'wait', targetId: id, res: pts, sol: currentAnswer }));
     } else { players[id].lastResult = -1; }
 }
 
 function reveal() {
     clearInterval(timer);
     document.getElementById('sol-box').innerText = "SOLUTION: " + currentAnswer; document.getElementById('sol-box').style.display = "block";
-    Object.keys(players).forEach(id => { 
-        client.publish(ROOM_ID + '/host', JSON.stringify({ type: 'reveal', targetId: id, res: players[id].lastResult, sol: currentAnswer })); 
-    });
+    Object.keys(players).forEach(id => { hostClient.publish(ROOM_ID + '/host', JSON.stringify({ type: 'reveal', targetId: id, res: players[id].lastResult, sol: currentAnswer })); });
     currentIdx++;
     if(gameActive) setTimeout(runRound, cfgSTime * 1000);
     else document.getElementById('vocab-question').innerText = "🏁 RACE FINISHED!";
@@ -187,23 +177,21 @@ function reveal() {
 
 function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
-// 3. CLIENT LOGIC
+// CLIENT LOGIC
 const params = new URLSearchParams(window.location.search);
 if(params.has('room')) {
     const room = params.get('room');
     const myId = 'p_' + Math.random().toString(36).substr(2, 5);
-    let clientPeer = mqtt.connect(BROKER);
+    const clientMqtt = mqtt.connect(BROKER);
     
     document.body.innerHTML = `
-        <div class="screen active" id="c-tut"><div class="glass-panel"><h2 class="game-title" style="font-size:2rem;">Protocol</h2><p>⚡ Fastest Correct: +2 pts | ✅ Correct: +1 pt | ❌ Wrong: -1 pt</p><button class="btn btn-primary" onclick="showScreen('c-join')">Engage</button></div></div>
-        <div class="screen" id="c-join"><div class="glass-panel"><h2 class="game-title" style="font-size:2rem;">Identity</h2><input type="text" id="p-name" class="client-input" placeholder="Enter Nickname"><button class="btn btn-primary" style="margin-top:20px;" onclick="doJoin()">Connect</button></div></div>
+        <div class="screen active" id="c-tut"><div class="glass-panel"><h2>Protocol</h2><p>⚡ Fastest Correct: +2 pts | ✅ Correct: +1 pt | ❌ Wrong/Slow: -1 pt</p><button class="btn btn-primary" onclick="showScreen('c-join')">Engage</button></div></div>
+        <div class="screen" id="c-join"><div class="glass-panel"><h2>Identity</h2><input type="text" id="p-name" class="client-input" placeholder="Enter Nickname"><button class="btn btn-primary" style="margin-top:20px;" onclick="doJoin()">Connect</button></div></div>
         <div class="screen" id="c-play"><div class="glass-panel"><h2 id="q-text" style="color:var(--neon-teal);">Linking...</h2><input type="text" id="a-input" class="client-input" placeholder="Type translation..."><button class="btn btn-primary" style="margin-top:20px;" id="btn-send" onclick="sendAns()">Transmit</button><div id="fb-box" style="display:none; margin-top:20px;"><div id="fb-val" style="font-size:4rem; font-weight:900;"></div><p id="fb-sol"></p></div></div></div>`;
 
-    clientPeer.on('connect', () => {
-        clientPeer.subscribe(room + '/host');
-    });
+    clientMqtt.on('connect', () => clientMqtt.subscribe(room + '/host'));
 
-    clientPeer.on('message', (topic, message) => {
+    clientMqtt.on('message', (topic, message) => {
         const d = JSON.parse(message.toString());
         if(d.type === 'start') showScreen('c-play');
         if(d.type === 'q') {
@@ -218,18 +206,16 @@ if(params.has('room')) {
         if(d.type === 'reveal' && d.targetId === myId) {
             document.getElementById('fb-box').style.display = "block";
             const val = document.getElementById('fb-val'); val.innerText = (d.res > 0 ? "+" + d.res : d.res);
-            val.style.color = d.res > 0 ? "var(--correct)" : "var(--wrong)";
-            document.getElementById('fb-sol').innerText = "Solution: " + d.sol;
+            val.style.color = d.res > 0 ? "var(--correct)" : "var(--wrong)"; document.getElementById('fb-sol').innerText = "Solution: " + d.sol;
         }
     });
 
     window.doJoin = () => {
-        const name = document.getElementById('p-name').value;
-        if(!name) return;
-        clientPeer.publish(room + '/client', JSON.stringify({ type: 'join', id: myId, name: name }));
+        const n = document.getElementById('p-name').value; if(!n) return;
+        clientMqtt.publish(room + '/client', JSON.stringify({ type: 'join', id: myId, name: n }));
         document.getElementById('c-join').innerHTML = "<h1>SYNCED</h1><p>Watch board!</p>";
     };
-    window.sendAns = () => clientPeer.publish(room + '/client', JSON.stringify({ type: 'ans', id: myId, val: document.getElementById('a-input').value }));
+    window.sendAns = () => clientMqtt.publish(room + '/client', JSON.stringify({ type: 'ans', id: myId, val: document.getElementById('a-input').value }));
 }
 </script>
 </body>
