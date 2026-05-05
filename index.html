@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏇 VocabRace ULTIMATE – Pro Edition</title>
+    <title>🏇 VocabRace PRO – Stability Fix (B2/C1)</title>
     <!-- Stable CDNs -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 
@@ -30,23 +30,25 @@
         .glass-panel {
             background: var(--glass); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 28px; padding: 40px; max-width: 750px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            text-align: center;
         }
 
-        .game-title { font-family: 'Outfit', sans-serif; font-size: 3.5rem; font-weight: 900; background: linear-gradient(to right, var(--neon-teal), var(--neon-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px; text-align: center; }
+        .game-title { font-family: 'Outfit', sans-serif; font-size: 3.5rem; font-weight: 900; background: linear-gradient(to right, var(--neon-teal), var(--neon-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px; }
 
         .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
         label { font-size: 0.75rem; color: var(--neon-teal); font-weight: 700; display: block; margin-bottom: 5px; text-align: left; text-transform: uppercase; }
         input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: white; font-size: 1rem; }
         
-        /* High Contrast for Students */
-        .client-input { color: #000 !important; background: #fff !important; font-weight: 700; border: 3px solid var(--neon-teal); text-align: center; }
+        /* High Contrast for Students (B2/C1 Focus) */
+        .client-input { color: #000 !important; background: #fff !important; font-weight: 700; border: 3px solid var(--neon-teal); text-align: center; font-size: 1.2rem; }
 
         .btn { padding: 16px; border-radius: 16px; border: none; font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 900; cursor: pointer; transition: 0.3s; width: 100%; }
         .btn-primary { background: linear-gradient(135deg, var(--neon-purple), var(--neon-teal)); color: white; }
         .btn-primary:disabled { background: #444; opacity: 0.5; cursor: not-allowed; }
 
         .track { width: 100%; height: 480px; background: #121431; position: relative; border-radius: 20px; border: 2px solid rgba(255,255,255,0.1); overflow: hidden; margin-top: 30px; }
-        .horse { position: absolute; font-size: 3rem; transition: left 1s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; align-items: center; z-index: 100; transform: scaleX(-1); }
+        /* Horse looking RIGHT to the Goal */
+        .horse { position: absolute; font-size: 3rem; transition: left 0.8s ease-out; display: flex; flex-direction: column; align-items: center; z-index: 100; transform: scaleX(-1); }
         .horse-label { transform: scaleX(-1); font-size: 0.7rem; background: #000; color: var(--neon-teal); padding: 2px 8px; border-radius: 4px; font-weight: 900; margin-bottom: -5px; white-space: nowrap; }
         
         .goal-area { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; background: repeating-conic-gradient(#fff 0% 25%, #000 0% 50%) 50% / 20px 20px; display: flex; align-items: center; justify-content: center; border-left: 4px solid var(--gold); }
@@ -54,6 +56,7 @@
 
         .solution-reveal { font-size: 2.5rem; color: var(--correct); font-weight: 900; margin-top: 15px; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 15px; border: 2px solid var(--correct); display: none; }
         #start-cd { font-size: 12rem; font-family: 'Outfit', sans-serif; font-weight: 900; color: var(--neon-teal); position: absolute; z-index: 1000; text-shadow: 0 0 50px var(--neon-teal); }
+        .marker-line { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(1, 255, 255, 0.1); border-left: 1px dashed rgba(1, 255, 255, 0.2); }
     </style>
 </head>
 <body>
@@ -63,14 +66,14 @@
     <div class="glass-panel">
         <div class="game-title">VocabRace Setup</div>
         <div class="config-grid">
-            <div><label>Target Score (Goal)</label><input type="number" id="cfg-rounds" value="10"></div>
+            <div><label>Score to Win</label><input type="number" id="cfg-rounds" value="10"></div>
             <div><label>Max Players</label><input type="number" id="cfg-players" value="30"></div>
             <div><label>Question Time (s)</label><input type="number" id="cfg-q-timer" value="15"></div>
             <div><label>Reveal Time (s)</label><input type="number" id="cfg-s-timer" value="5"></div>
         </div>
-        <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">📁 Load Vocabulary (CSV/DOCX/XLSX)</button>
+        <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">📁 Select Vocabulary (CSV/XLSX/DOCX)</button>
         <input type="file" id="file-input" style="display:none" onchange="processFile(this)">
-        <p id="file-status" style="margin: 15px 0; color: var(--neon-teal); text-align:center;">No file loaded</p>
+        <p id="file-status" style="margin: 15px 0; color: var(--neon-teal);">No file uploaded</p>
         <button class="btn btn-primary" id="btn-lobby" onclick="openLobby()" disabled>Open Lobby</button>
     </div>
 </div>
@@ -79,8 +82,8 @@
 <div class="screen" id="lobby-screen">
     <div class="glass-panel">
         <div class="game-title">Waiting Room</div>
-        <div id="qr-container" style="text-align: center; display: flex; justify-content: center;"></div>
-        <p id="p-count" style="font-size: 1.2rem; color: var(--neon-teal); margin: 20px 0; text-align: center;">Joined: 0</p>
+        <div id="qr-container" style="display:flex; justify-content:center;"></div>
+        <p id="p-count" style="font-size: 1.2rem; color: var(--neon-teal); margin: 20px 0;">Joined: 0</p>
         <div id="p-list" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:30px;"></div>
         <button class="btn btn-primary" id="btn-start" onclick="startSequence()" disabled>Start Race</button>
     </div>
@@ -125,29 +128,30 @@ async function processFile(input) {
 
 function parseVocab(text) {
     vocab = text.split(/\r?\n/).map(l => l.split(/[;,]/)).filter(p => p.length >= 2).map(p => ({
-        en: p[0].trim(), de: p[1].trim()
+        en: p[0].trim(), de: p[1].trim(), err: 0
     })).sort(() => Math.random() - 0.5);
     document.getElementById('file-status').innerText = `✅ ${vocab.length} Words Loaded`;
     document.getElementById('btn-lobby').disabled = vocab.length === 0;
 }
 
-// 2. CONNECTIVITY
+// 2. STABLE HOST CONNECTIVITY
 function openLobby() {
     cfgRounds = parseInt(document.getElementById('cfg-rounds').value);
     cfgQTime = parseInt(document.getElementById('cfg-q-timer').value);
     cfgSTime = parseInt(document.getElementById('cfg-s-timer').value);
     
-    peer = new Peer();
+    peer = new Peer(); // Auto-generates ID from PeerJS Broker
     peer.on('open', (id) => {
         const url = window.location.href.split('?')[0] + '?join=' + id;
         document.getElementById('qr-container').innerHTML = "";
         new QRCode(document.getElementById("qr-container"), { text: url, width: 200, height: 200 });
         showScreen('lobby-screen');
     });
-    peer.on('connection', (c) => {
-        c.on('data', (d) => {
-            if(d.type === 'join') { players[c.peer] = { name: d.name, score: 0, conn: c, last: 0 }; updateLobby(); }
-            if(d.type === 'ans') handleAnswer(c.peer, d.val);
+    
+    peer.on('connection', (conn) => {
+        conn.on('data', (d) => {
+            if(d.type === 'join') { players[conn.peer] = { name: d.name, score: 0, conn: conn, lastResult: 0 }; updateLobby(); }
+            if(d.type === 'ans') checkAnswer(conn.peer, d.val);
         });
     });
 }
@@ -171,100 +175,111 @@ function startSequence() {
 function startRace() {
     gameActive = true;
     Object.values(players).forEach(p => p.conn.send({ type: 'start' }));
+    const track = document.getElementById('race-track');
+    for(let i=1; i<10; i++) { 
+        const l = document.createElement('div'); l.className = 'marker-line'; l.style.left = (i*10)+"%"; track.appendChild(l); 
+    }
     Object.keys(players).forEach((id, i) => {
         const h = document.createElement('div'); h.className = 'horse'; h.id = `h-${id}`;
         h.innerHTML = `<span class="horse-label">${players[id].name}</span>🏇`;
         h.style.top = (i * (400/Object.keys(players).length) + 40) + "px"; h.style.left = "5%";
-        document.getElementById('race-track').appendChild(h);
+        track.appendChild(h);
     });
     runRound();
 }
 
 function runRound() {
-    if(currentIdx >= vocab.length) currentIdx = 0;
+    // Intelligent Recycling: Re-ask difficult words
+    if(currentIdx >= vocab.length) {
+        vocab = vocab.sort((a,b) => b.err - a.err);
+        currentIdx = 0;
+    }
     document.getElementById('sol-box').style.display = "none";
-    firstCorrectInRound = false; // Reset for scoring
+    firstCorrectInRound = false;
     let isEn = Math.random() < 0.5;
     currentAnswer = isEn ? vocab[currentIdx].de : vocab[currentIdx].en;
-    let q = "Translate: " + (isEn ? vocab[currentIdx].en : vocab[currentIdx].de);
-    document.getElementById('vocab-question').innerText = q;
-    Object.values(players).forEach(p => { p.last = -1; p.conn.send({ type: 'q', text: q }); });
+    let qText = "Translate: " + (isEn ? vocab[currentIdx].en : vocab[currentIdx].de);
+    document.getElementById('vocab-question').innerText = qText;
+    Object.values(players).forEach(p => { p.lastResult = -1; p.conn.send({ type: 'q', text: qText }); });
     
     let s = cfgQTime; clearInterval(timer);
     timer = setInterval(() => {
         document.getElementById('timer-bar').innerText = `TIME: ${s}S`; s--;
-        if(s < 0) reveal();
+        if(s < 0) { vocab[currentIdx].err++; reveal(); }
     }, 1000);
 }
 
-function handleAnswer(id, val) {
+function checkAnswer(id, val) {
     if(!gameActive || document.getElementById('sol-box').style.display === "block") return;
     if(val.toLowerCase().trim() === currentAnswer.toLowerCase().trim()) {
         let pts = firstCorrectInRound ? 1 : 2; // +2 for fastest, +1 for others
         firstCorrectInRound = true;
-        players[id].score += pts; players[id].last = pts;
+        players[id].score += pts; players[id].lastResult = pts;
         if(players[id].score >= cfgRounds) gameActive = false;
-        // Immediate visual update on board
-        const pct = Math.min(88, 5 + (players[id].score * (80/cfgRounds)));
-        document.getElementById(`h-${id}`).style.left = pct + "%";
-        players[id].conn.send({ type: 'wait', res: pts, sol: currentAnswer });
-    } else { players[id].last = -1; }
+        reveal();
+    } else { vocab[currentIdx].err++; players[id].lastResult = -1; }
 }
 
 function reveal() {
     clearInterval(timer);
     const box = document.getElementById('sol-box'); box.innerText = "SOLUTION: " + currentAnswer; box.style.display = "block";
     Object.keys(players).forEach(id => {
-        const p = players[id];
-        p.conn.send({ type: 'reveal', res: p.last, sol: currentAnswer });
+        const pct = Math.min(88, 5 + (players[id].score * (80/cfgRounds)));
+        document.getElementById(`h-${id}`).style.left = pct + "%";
+        players[id].conn.send({ type: 'reveal', res: players[id].lastResult, sol: currentAnswer });
     });
     currentIdx++;
     if(gameActive) setTimeout(runRound, cfgSTime * 1000);
-    else document.getElementById('vocab-question').innerText = "🏁 FINISHED!";
+    else document.getElementById('vocab-question').innerText = "🏁 CHAMPION CROWNED!";
 }
 
 function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 
-// 3. CLIENT LOGIC
+// 3. STABLE CLIENT CONNECTIVITY
 const params = new URLSearchParams(window.location.search);
 if(params.has('join')) {
     const hostId = params.get('join');
     document.body.innerHTML = `
         <div class="screen active" id="c-tut"><div class="glass-panel">
-            <h2 class="game-title" style="font-size:2rem;">Protocol</h2>
+            <h2 class="game-title">Protocol</h2>
             <div style="text-align:left; margin-bottom:20px;">
                 <p>⚡ <strong>Fastest Correct:</strong> +2 Points</p>
                 <p>✅ <strong>Correct Answer:</strong> +1 Point</p>
                 <p>❌ <strong>Wrong/Slow:</strong> -1 Point</p>
             </div>
-            <button class="btn btn-primary" onclick="showScreen('c-join')">Understood</button>
+            <button class="btn btn-primary" onclick="showScreen('c-join')">Engage</button>
         </div></div>
         <div class="screen" id="c-join"><div class="glass-panel">
-            <h2 class="game-title" style="font-size:2rem;">Identity</h2>
+            <h2>Identity</h2>
             <input type="text" id="p-name" class="client-input" placeholder="Enter Nickname">
-            <button class="btn btn-primary" style="margin-top:20px;" onclick="doJoin('${hostId}')">Connect</button>
+            <button class="btn btn-primary" style="margin-top:20px;" onclick="connectToHost('${hostId}')">Connect</button>
             <p id="c-status" style="margin-top:10px; color:var(--neon-teal);"></p>
         </div></div>
         <div class="screen" id="c-play"><div class="glass-panel">
-            <h2 id="q-text" style="font-size:1.5rem; color:var(--neon-teal); margin-bottom:15px;">Linking...</h2>
-            <input type="text" id="a-input" class="client-input" placeholder="Translate here...">
+            <h2 id="q-text" style="color:var(--neon-teal); margin-bottom:15px;">Linking...</h2>
+            <input type="text" id="a-input" class="client-input" placeholder="Type translation...">
             <button class="btn btn-primary" style="margin-top:20px;" id="btn-send" onclick="sendAns()">Transmit</button>
             <div id="fb-box" style="display:none; margin-top:20px;"><div id="fb-val" style="font-size:4rem; font-weight:900;"></div><p id="fb-sol"></p></div>
         </div></div>`;
 }
 
-function doJoin(hostId) {
+function connectToHost(hostId) {
     const name = document.getElementById('p-name').value; if(!name) return;
-    const status = document.getElementById('c-status'); status.innerText = "Initializing Peer...";
-    
+    const status = document.getElementById('c-status'); 
+    status.innerText = "Initializing Sync...";
+
     const clientPeer = new Peer();
+    
+    // THE FIX: Wait for Client Peer to open before connecting
     clientPeer.on('open', (id) => {
-        status.innerText = "Connecting to Host...";
-        const conn = clientPeer.connect(hostId);
-        conn.on('open', () => { 
-            conn.send({ type: 'join', name: name }); 
-            document.getElementById('c-join').innerHTML = "<h2 class='game-title'>SYNCED</h2><p>Look at the board!</p>"; 
+        status.innerText = "Searching for Race Track...";
+        const conn = clientPeer.connect(hostId, { reliable: true });
+        
+        conn.on('open', () => {
+            conn.send({ type: 'join', name: name });
+            document.getElementById('c-join').innerHTML = "<h1>SYNCED</h1><p>Ready to galopp!</p>";
         });
+
         conn.on('data', (d) => {
             if(d.type === 'start') showScreen('c-play');
             if(d.type === 'q') {
@@ -273,22 +288,26 @@ function doJoin(hostId) {
                 inp.value = ""; document.getElementById('btn-send').style.display = "block";
                 document.getElementById('fb-box').style.display = "none";
             }
-            if(d.type === 'wait') {
-                const inp = document.getElementById('a-input'); inp.disabled = true; inp.style.background = "#ccc";
-                document.getElementById('btn-send').style.display = "none";
-                document.getElementById('fb-box').style.display = "block";
-                document.getElementById('fb-val').innerText = "...";
-            }
             if(d.type === 'reveal') {
-                document.getElementById('fb-box').style.display = "block";
+                const inp = document.getElementById('a-input'); inp.disabled = true; inp.style.background = "#ccc";
+                document.getElementById('btn-send').style.display = "none"; document.getElementById('fb-box').style.display = "block";
                 const val = document.getElementById('fb-val');
-                const pts = d.res;
-                val.innerText = (pts > 0 ? "+" + pts : pts);
-                val.style.color = pts > 0 ? "var(--correct)" : "var(--wrong)";
-                document.getElementById('fb-sol').innerText = "Correct: " + d.sol;
+                val.innerText = (d.res > 0 ? "+" + d.res : d.res);
+                val.style.color = d.res > 0 ? "var(--correct)" : "var(--wrong)";
+                document.getElementById('fb-sol').innerText = "Correct Solution: " + d.sol;
             }
         });
+
+        conn.on('error', (err) => {
+            status.innerText = "Error: " + err.type;
+            console.error(err);
+        });
+
         window.sendAns = () => conn.send({ type: 'ans', val: document.getElementById('a-input').value });
+    });
+
+    clientPeer.on('error', (err) => {
+        status.innerText = "Peer Error: " + err.type;
     });
 }
 </script>
